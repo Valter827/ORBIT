@@ -19,7 +19,7 @@ test("canonical workspace paths can be revalidated without permitting outside pa
     const canonical = await guard.validate("note.txt", "read");
     assert.equal(await guard.validate(canonical, "write"), canonical);
     await assert.rejects(guard.validate(path.join(second, "outside.txt"), "write"), /outside workspace/);
-    await assert.rejects(guard.validate(path.join(first, ".env"), "read"), /Protected/);
+    await assert.rejects(guard.validate(path.join(path.dirname(canonical), ".env"), "read"), /Protected/);
     await fs.unlink(alias);
     await fs.symlink(second, alias, process.platform === "win32" ? "junction" : "dir");
     await assert.rejects(guard.validate(canonical, "write"), /outside workspace/);
