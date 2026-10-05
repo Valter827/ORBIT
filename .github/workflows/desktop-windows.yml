@@ -55,8 +55,9 @@ jobs:
           "version=$orbitVersion" >> $env:GITHUB_OUTPUT
       - run: npm ci
       - run: npm run check:release
-      - run: npx playwright install chromium
-      - run: node scripts/desktop-ui-smoke.mjs --visual
+      - name: Current chat-first frontend smoke (fixture, not native AI)
+        shell: pwsh
+        run: node scripts/delivery-ui-smoke.mjs --visual --browser "$env:ProgramFiles/Google/Chrome/Application/chrome.exe"
       - run: node scripts/prepare-desktop.mjs
       - run: node scripts/protocol-smoke.mjs
       - name: Native Sense extraction (interactive runner opt-in)
