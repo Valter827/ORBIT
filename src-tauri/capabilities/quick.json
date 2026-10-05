@@ -1,0 +1,6 @@
+{
+  "identifier": "quick",
+  "description": "Quick Ask has no filesystem, shell, secret or settings plugin permissions.",
+  "windows": ["quick"],
+  "permissions": ["core:event:allow-listen", "core:event:allow-unlisten"]
+}

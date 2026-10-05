@@ -1,0 +1,90 @@
+name: ORBIT Windows desktop
+on:
+  workflow_dispatch:
+    inputs:
+      release_type:
+        type: choice
+        options: [unsigned-test, production]
+        default: unsigned-test
+  push:
+    branches: [main, "delivery/**"]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  signing-prerequisites:
+    runs-on: windows-2022
+    environment: windows-production
+    if: github.event_name == 'workflow_dispatch' && inputs.release_type == 'production'
+    steps:
+      - name: Require trusted release configuration
+        shell: pwsh
+        env:
+          ORBIT_SIGNING_THUMBPRINT: ${{ secrets.WINDOWS_CERTIFICATE_THUMBPRINT }}
+          ORBIT_TIMESTAMP: ${{ vars.WINDOWS_TIMESTAMP_URL }}
+          ORBIT_RUNNER_READY: ${{ vars.WINDOWS_SIGNING_RUNNER_READY }}
+          ORBIT_RELEASE_REF: ${{ github.ref }}
+        run: |
+          if ($env:ORBIT_RELEASE_REF -ne 'refs/heads/main') { throw 'Production signing is restricted to main.' }
+          if ($env:ORBIT_SIGNING_THUMBPRINT -notmatch '^[a-fA-F0-9]{40}$' -or -not $env:ORBIT_TIMESTAMP -or $env:ORBIT_RUNNER_READY -ne 'true') {
+            throw 'SIGNING NOT AVAILABLE: provision the protected certificate-store runner and signing configuration.'
+          }
+  desktop:
+    needs: signing-prerequisites
+    if: always() && (needs.signing-prerequisites.result == 'success' || needs.signing-prerequisites.result == 'skipped')
+    runs-on: ${{ github.event_name == 'workflow_dispatch' && inputs.release_type == 'production' && 'orbit-signing-windows' || 'windows-2022' }}
+    environment: ${{ github.event_name == 'workflow_dispatch' && inputs.release_type == 'production' && 'windows-production' || 'windows-test' }}
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: ".node-version"
+          cache: npm
+      - run: npm install --global npm@11.16.0
+      - uses: dtolnay/rust-toolchain@1.98.1
+        with:
+          components: rustfmt
+          targets: x86_64-pc-windows-msvc
+      # No target cache: each job compiles the executable and build scripts afresh.
+      - name: Read release version
+        id: release
+        shell: pwsh
+        run: |
+          $orbitVersion = node -p "require('./package.json').version"
+          "version=$orbitVersion" >> $env:GITHUB_OUTPUT
+      - run: npm ci
+      - run: npm run check:release
+      - run: npx playwright install chromium
+      - run: node scripts/desktop-ui-smoke.mjs --visual
+      - run: node scripts/prepare-desktop.mjs
+      - run: node scripts/protocol-smoke.mjs
+      - name: Native Sense extraction (interactive runner opt-in)
+        if: vars.ORBIT_NATIVE_SENSE_TESTS == 'true'
+        run: node scripts/sense-native-helper-smoke.mjs
+      - run: cargo fmt --manifest-path src-tauri/Cargo.toml --check
+      - name: Build unsigned test artifact
+        if: github.event_name != 'workflow_dispatch' || inputs.release_type != 'production'
+        run: npm run build:desktop
+      - name: Build signed production artifact
+        if: github.event_name == 'workflow_dispatch' && inputs.release_type == 'production'
+        env:
+          WINDOWS_CERTIFICATE_THUMBPRINT: ${{ secrets.WINDOWS_CERTIFICATE_THUMBPRINT }}
+          WINDOWS_CERTIFICATE_STORE: ${{ vars.WINDOWS_CERTIFICATE_STORE }}
+          WINDOWS_TIMESTAMP_URL: ${{ vars.WINDOWS_TIMESTAMP_URL }}
+          WINDOWS_EXPECTED_PUBLISHER: ${{ vars.WINDOWS_EXPECTED_PUBLISHER }}
+        run: npm run build:production
+      - name: Package identity and fresh installation smoke (not real AI acceptance)
+        shell: pwsh
+        run: ./scripts/windows-package-smoke.ps1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ORBIT-${{ steps.release.outputs.version }}-windows-x64
+          path: release/ORBIT-${{ steps.release.outputs.version }}-windows-x64/
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ORBIT-${{ steps.release.outputs.version }}-validation
+          path: validation/
+          if-no-files-found: warn

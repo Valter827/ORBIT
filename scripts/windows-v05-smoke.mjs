@@ -1,0 +1,107 @@
+// Installed Windows acceptance for v0.5. HTTP responses are fixtures, never reported as live LLM results.
+import {chromium} from "playwright";
+import {createServer} from "node:http";
+import {spawnSync} from "node:child_process";
+import {promises as fs} from "node:fs";
+import assert from "node:assert/strict";
+let browser,page,authenticated=0,knowledgeRequests=0;
+const results=[],secret="orbit-v05-synthetic-credential",port=9225;
+const server=createServer((req,res)=>{
+ if(req.headers.authorization==="Bearer "+secret)authenticated++;
+ res.setHeader("content-type","application/json");
+ if(req.url==="/v1/models"){res.end(JSON.stringify({data:[{id:"acceptance-fixture",capabilities:["tools"],context_length:32768}]}));return;}
+ if(req.url!=="/v1/chat/completions"){res.writeHead(404);res.end();return;}
+ let body="";req.on("data",b=>body+=b);req.on("end",()=>{
+  const input=JSON.parse(body);assert.equal(input.tools,undefined);
+  const knowledge=body.includes("violet-739");if(knowledge)knowledgeRequests++;
+  const answer=knowledge?"Aurora launch code: violet-739. Source: launch.md.":"Fixture connected.";
+  if(!input.stream){res.end(JSON.stringify({model:"acceptance-fixture",choices:[{message:{content:answer}}],usage:{prompt_tokens:10,completion_tokens:8}}));return;}
+  res.setHeader("content-type","text/event-stream");
+  res.write("data: "+JSON.stringify({model:"acceptance-fixture",choices:[{delta:{content:answer.slice(0,12)},finish_reason:null}]})+"\n\n");
+  const timer=setTimeout(()=>res.end("data: "+JSON.stringify({choices:[{delta:{content:answer.slice(12)},finish_reason:"stop"}],usage:{prompt_tokens:10,completion_tokens:8}})+"\n\ndata: [DONE]\n\n"),1200);
+  res.on("close",()=>clearTimeout(timer));
+ });
+});
+await new Promise(r=>server.listen(0,"127.0.0.1",r));
+const config={id:"acceptance-v05",name:"v0.5 acceptance fixture",type:"local",endpoint:"http://127.0.0.1:"+server.address().port+"/v1/",remoteAcknowledged:false,localInferenceConfirmed:true};
+const connect=async()=>{for(let i=0;i<60;i++){try{browser=await chromium.connectOverCDP("http://127.0.0.1:"+port);page=browser.contexts()[0].pages().find(p=>p.url().includes("tauri.localhost")&&!p.url().includes("quick="));if(page)break;}catch{}await new Promise(r=>setTimeout(r,200));}assert.ok(page);await page.reload();await page.getByRole("heading",{name:/What shall we work on\?|COSMO 1\.0/}).first().waitFor();};
+const invoke=(method,args={})=>page.evaluate(({method,args})=>window.__TAURI_INTERNALS__.invoke(method,args),{method,args});
+const core=(method,params={})=>invoke("core_command",{method,params});
+const next=()=>page.getByRole("button",{name:"Continue",exact:true}).click();
+const waitIdle=()=>page.waitForFunction(()=>{const b=[...document.querySelectorAll("button")].find(b=>b.textContent==="Send message");return b&&!b.disabled;});
+try{
+ await connect();const initialDesktop=await invoke("desktop_state");assert.equal(initialDesktop.version,JSON.parse(await fs.readFile("package.json","utf8")).version);
+ results.push("PASS installed current Windows release and Desktop shortcut");
+ const prior=await core("ai.state"),retained=prior.profiles.find(p=>p.providerId!==config.id);assert.ok(retained);
+ await core("ai.select",{id:retained.id});for(const p of prior.profiles.filter(p=>p.providerId===config.id))await core("ai.delete",{id:p.id,deleteKnowledge:true});
+ await invoke("save_provider",{input:{provider:config,apiKey:secret,disconnect:false}});
+ await core("ai.models",{providerId:config.id,refresh:true});
+ await page.getByRole("button",{name:"Create AI",exact:true}).click();
+ await page.getByLabel("Name",{exact:true}).fill("NOVA");
+ await next();
+ await page.getByRole("checkbox",{name:"Programming",exact:true}).check();
+ await page.getByLabel("Tell us what you want your AI to do",{exact:true}).fill("Explain project facts using my knowledge and help review code.");
+ await next();await page.getByLabel("Personality",{exact:true}).selectOption("Friendly");await next();
+ await page.getByLabel("Provider",{exact:true}).selectOption(config.id);
+ await page.getByRole("button",{name:"Refresh available models",exact:true}).click();
+ await page.getByLabel("Model",{exact:true}).selectOption("acceptance-fixture");await next();
+ await page.getByText("Add manual knowledge",{exact:true}).click();
+ await page.getByLabel("Source name",{exact:true}).fill("launch.md");
+ await page.getByLabel("Knowledge text",{exact:true}).fill("Aurora launch code is violet-739. This fact belongs to NOVA.");
+ await page.getByRole("button",{name:"Save knowledge note",exact:true}).click();
+ await page.locator(".knowledge-list").getByText("launch.md",{exact:true}).first().waitFor();
+ await next();await next();
+ await page.getByRole("checkbox",{name:"Code Reviewer",exact:true}).check();
+ await page.getByText("Repeatable workflows",{exact:true}).click();
+ await page.getByRole("button",{name:"Add workflow",exact:true}).click();
+ await next();await next();
+ await page.getByLabel(/^Test question/).fill("What is the Aurora launch code?");
+ await page.getByRole("button",{name:"Test my AI",exact:true}).click();
+ await page.locator(".preview-answer").filter({hasText:"violet-739"}).first().waitFor();
+ results.push("PASS ten-step creator, personality, knowledge ingestion, skills, workflow and real protocol preview");
+ await next();await page.screenshot({path:"validation/windows-v05-creator.png"});await page.getByRole("button",{name:"Create AI · Start chatting",exact:true}).click();
+ await page.getByRole("dialog",{name:"Meet NOVA",exact:true}).getByRole("button",{name:"Start chatting",exact:true}).click();
+ await page.getByRole("heading",{name:/What shall we work on\?|COSMO 1\.0/}).first().waitFor();
+ const saved=await core("ai.state"),nova=saved.profiles.find(p=>p.id===saved.selected);assert.equal(nova.name,"NOVA");assert.equal(nova.isDraft,false);assert.equal(nova.personality,"Friendly");assert.equal(nova.workflows.length,1);
+ await page.getByRole("button",{name:"Memory",exact:true}).click();await page.getByText("Add a memory",{exact:true}).click();await page.getByLabel("Memory note",{exact:true}).fill("NOVA private fact cobalt-628");await page.getByRole("button",{name:"Remember",exact:true}).click();await page.getByText("NOVA private fact cobalt-628",{exact:true}).first().waitFor();await page.getByRole("button",{name:"Home",exact:true}).click();
+ const only=page.getByLabel("Local Only Mode",{exact:true});if(!await only.isChecked())await only.click();
+ await page.waitForFunction(()=>[...document.querySelectorAll("label")].find(e=>e.textContent==="Local Only Mode")?.querySelector("input")?.checked);
+ await page.getByLabel("Ask ORBIT",{exact:true}).fill("What is the Aurora launch code?");
+ await page.getByRole("button",{name:"Send message",exact:true}).click();
+ await page.getByRole("button",{name:"My AIs",exact:true}).click();await page.getByRole("button",{name:"Home",exact:true}).click();
+ await page.locator(".chat-message.assistant").filter({hasText:"violet-739"}).first().waitFor();
+ await page.locator(".response-context>summary").click();
+ await page.locator(".source-list").getByRole("button",{name:"launch.md",exact:true}).click();
+ await page.getByRole("dialog",{name:"launch.md",exact:true}).getByText(/violet-739/).waitFor();
+ await page.getByRole("dialog").getByRole("button",{name:"Close",exact:true}).click();
+ await page.getByRole("button",{name:"Regenerate",exact:true}).click();
+ await page.waitForFunction(()=>{const b=[...document.querySelectorAll("button")].find(b=>b.textContent==="Regenerate");return b&&!b.disabled;});
+ assert.equal(await page.locator(".chat-message.assistant").count(),1);assert.ok(knowledgeRequests>=3);
+ results.push("PASS retrieval passes unique fact into preview/chat/regeneration; source attribution opens actual passages");
+ await page.getByLabel("Ask ORBIT",{exact:true}).fill("Cancel this");await page.getByRole("button",{name:"Send message",exact:true}).click();await page.getByRole("button",{name:"Stop generating",exact:true}).click();await page.locator(".notice details>summary").click();await page.getByText("Generation stopped.",{exact:true}).first().waitFor();
+ await assert.rejects(core("testConnection"),/LOCAL ONLY/);results.push("PASS Chat cancellation and Local Only");
+ await page.screenshot({path:"validation/windows-v05-chat.png"});
+ const beforeRestart=authenticated;
+ await invoke("window_action",{action:"stop-exit"}).catch(()=>{});await browser.close().catch(()=>{});browser=undefined;page=undefined;await new Promise(r=>setTimeout(r,1200));
+ const launch=spawnSync("powershell.exe",["-NoProfile","-Command","Start-Process -FilePath (Join-Path ([Environment]::GetFolderPath('Desktop')) 'ORBIT.lnk') -WindowStyle Hidden"],{windowsHide:true,env:{...process.env,WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS:"--remote-debugging-port="+port}});
+ assert.equal(launch.status,0);await connect();
+ const restored=await core("ai.state");assert.equal(restored.selected,nova.id);assert.equal(restored.profiles.find(p=>p.id===nova.id).workflows.length,1);assert.equal((await core("ai.knowledgeList",{profileId:nova.id})).length,1);
+ await core("ai.test",{providerId:config.id,modelId:"acceptance-fixture"});assert.ok(authenticated>beforeRestart);assert.ok(!JSON.stringify(restored).includes(secret));
+ results.push("PASS restart persistence: profile, knowledge, workflows, selection and Windows Credential Manager");
+ assert.ok((await core("ai.memoryRecords")).some(m=>m.content==="NOVA private fact cobalt-628"));await core("ai.select",{id:retained.id});assert.ok(!(await core("ai.memoryRecords")).some(m=>m.content==="NOVA private fact cobalt-628"));await core("ai.select",{id:nova.id});results.push("PASS native memory UI, restart persistence and profile isolation");
+ const exported=await core("ai.export",{id:nova.id,includeKnowledge:true});assert.ok(!exported.text.includes(secret));assert.equal(JSON.parse(exported.text).schemaVersion,2);
+ await page.getByRole("button",{name:"My AIs",exact:true}).click();
+ await page.getByRole("heading",{name:"NOVA",exact:true}).scrollIntoViewIfNeeded();await page.screenshot({path:"validation/windows-v05-studio.png"});
+ const card=page.locator("section.ai-card").filter({has:page.getByRole("heading",{name:"NOVA",exact:true})});await card.getByText("More actions",{exact:true}).click();await card.getByRole("button",{name:"Delete",exact:true}).click();
+ await page.getByRole("dialog").getByRole("button",{name:"Delete AI",exact:true}).click();
+ await page.getByRole("dialog").waitFor({state:"hidden"});
+ await page.locator(".import-button input").setInputFiles({name:"NOVA.orbit-ai",mimeType:"application/json",buffer:Buffer.from(exported.text)});
+ await page.getByRole("dialog",{name:"Review imported AI"}).first().waitFor();await page.getByRole("button",{name:"Import reviewed AI",exact:true}).click();await page.getByRole("dialog").waitFor({state:"hidden"});
+ const after=await core("ai.state"),imported=after.profiles.find(p=>p.providerId===config.id);assert.ok(imported);assert.notEqual(imported.id,nova.id);assert.equal(imported.workflows.length,1);assert.equal(imported.permissionPolicy.read,"ask");assert.equal((await core("ai.knowledgeSearch",{profileId:imported.id,query:"Aurora"})).sources.length,1);
+ results.push("PASS portable export through native IPC, delete, reviewed file import, workflow/knowledge restoration and safe permissions");
+ await invoke("save_provider",{input:{provider:config,disconnect:true}});await core("ai.localOnly",{enabled:prior.localOnly});await core("ai.select",{id:retained.id});await core("ai.delete",{id:imported.id,deleteKnowledge:true});
+ await invoke("window_action",{action:"stop-exit"}).catch(()=>{});
+ results.push("NOT VERIFIED real Anthropic/local LLM; fixture acceptance only");
+ console.log(results.join("\n"));await fs.writeFile("validation/windows-v05-result.json",JSON.stringify({results,fixture:true},null,2));
+}catch(error){console.error(error);if(page)await page.screenshot({path:"validation/windows-v05-failure.png"}).catch(()=>{});process.exitCode=1;}
+finally{await browser?.close().catch(()=>{});server.closeAllConnections();await new Promise(r=>server.close(r));}
