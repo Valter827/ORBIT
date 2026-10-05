@@ -1,5 +1,5 @@
 import path from "node:path";
-import { promises as fs } from "node:fs";
+import { promises as fs, realpathSync } from "node:fs";
 export type PathDecision =
   | { allowed: true; resolved: string; root: string }
   | { allowed: false; reason: "outside_workspace" | "no_workspace" | "blocked_name"; detail: string };
@@ -28,7 +28,16 @@ export class PathGuard {
   check(input: string, mode: "read" | "write"): PathDecision {
     if (!this.roots.length) return { allowed: false, reason: "no_workspace", detail: "No workspace" };
     const resolved = path.resolve(this.roots[0]!, input);
-    const root = this.roots.find((r) => this.within(resolved, r));
+    // Re-resolve aliases for every check: do not retain a stale permission if
+    // an authorized root junction is retargeted after this guard is created.
+    const roots = this.roots.flatMap((r) => {
+      try {
+        return [r, realpathSync(r)];
+      } catch {
+        return [r];
+      }
+    });
+    const root = roots.find((r) => this.within(resolved, r));
     if (!root) return { allowed: false, reason: "outside_workspace", detail: "Path outside workspace" };
     const base = this.key(path.basename(resolved));
     const segments = this.key(path.relative(root, resolved)).split(path.sep);

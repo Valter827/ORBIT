@@ -234,7 +234,8 @@ export function createSearchTool(
       let count = 0,
         entriesSeen = 0,
         truncated = false;
-      const stack = [await checked(guard, workspaceRoot, "read")];
+      const canonicalRoot = await checked(guard, workspaceRoot, "read");
+      const stack = [canonicalRoot];
       while (stack.length && !truncated) {
         checkAbort(ctx.signal);
         const dir = stack.pop()!;
@@ -276,7 +277,7 @@ export function createSearchTool(
           for (let n = 0; n < lines.length; n++)
             if (lines[n]!.includes(i.query)) {
               matches.push({
-                path: path.relative(workspaceRoot, target).split(path.sep).join("/"),
+                path: path.relative(canonicalRoot, target).split(path.sep).join("/"),
                 line: n + 1,
                 text: lines[n]!.trim().slice(0, 200),
               });

@@ -512,7 +512,17 @@ export class KnowledgeLibrary {
     return this.ingest(profile, paths, JSON.parse(String(row["limits"])), spaces, id);
   }
   private async removeMissing(profile: string, selected: string) {
-    const root = path.resolve(selected);
+    // Stored source paths are canonical; normalize existing ancestors even
+    // when the selected document itself has already been deleted.
+    const canonical = async (file: string): Promise<string> => {
+      try {
+        return await fs.realpath(file);
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== "ENOENT" || path.dirname(file) === file) throw error;
+        return path.join(await canonical(path.dirname(file)), path.basename(file));
+      }
+    };
+    const root = await canonical(path.resolve(selected));
     for (const row of this.db
       .prepare("SELECT id,source_path FROM knowledge_sources WHERE profile=? AND source_path<>''")
       .all(profile)) {
