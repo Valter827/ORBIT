@@ -32,7 +32,9 @@ export class PathGuard {
     // an authorized root junction is retargeted after this guard is created.
     const roots = this.roots.flatMap((r) => {
       try {
-        return [r, realpathSync(r)];
+        // fs.promises.realpath uses the native resolver. The JS sync resolver
+        // may retain 8.3 spellings on Windows and is not interchangeable here.
+        return [r, realpathSync.native(r)];
       } catch {
         return [r];
       }
