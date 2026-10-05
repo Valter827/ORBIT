@@ -32,7 +32,7 @@ export async function collectRelease(root, receipt) {
   const { version } = receipt;
   const destination = path.join(root, "release", `ORBIT-${version}-windows-x64`);
   if (fs.existsSync(destination)) throw new Error("Release destination already exists; refuse mixing builds");
-  const app = path.join(root, "src-tauri/target/release/ORBIT.exe");
+  const app = path.join(root, "src-tauri/target/release/ORBIT.exe.nsis");
   const installer = path.join(root, `src-tauri/target/release/bundle/nsis/ORBIT_${version}_x64-setup.exe`);
   for (const file of [app, installer]) {
     if (!receipt.artifacts.some(entry => path.resolve(root, entry.path) === file)) throw new Error("Missing build receipt entry");
@@ -64,7 +64,7 @@ export async function collectRelease(root, receipt) {
     .pipe(fs.createWriteStream(portablePath)).on("finish", resolve).on("error", reject));
   fs.copyFileSync(app, path.join(destination, "ORBIT.exe"));
   fs.copyFileSync(installer, path.join(destination, path.basename(installer)));
-  const status = { ...receipt, exe: digest(app), installer: digest(installer), portable: digest(portablePath), resources,
+  const status = { ...receipt, exe: { ...digest(app), name: "ORBIT.exe" }, installer: digest(installer), portable: digest(portablePath), resources,
     nativeAcceptance: "NOT VERIFIED", installerAcceptance: "NOT VERIFIED", portableAcceptance: "NOT VERIFIED" };
   fs.writeFileSync(path.join(destination, "release-status.json"), JSON.stringify(status, null, 2) + "\n");
   fs.writeFileSync(path.join(destination, "SHA256SUMS.txt"), ["ORBIT.exe", path.basename(installer), path.basename(portablePath), "release-status.json"]

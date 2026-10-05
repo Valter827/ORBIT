@@ -9,7 +9,7 @@ import { digest, verifyReceipt, collectRelease } from "./release-artifacts.mjs";
 test("packaging rejects changed artifacts and missing runtime, never emits a release", async () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "orbit-packaging-unit-"));
   try {
-    const exe = "src-tauri/target/release/ORBIT.exe";
+    const exe = "src-tauri/target/release/ORBIT.exe.nsis";
     const setup = "src-tauri/target/release/bundle/nsis/ORBIT_0.9.1_x64-setup.exe";
     for (const file of [exe, setup]) {
       fs.mkdirSync(path.dirname(path.join(root, file)), { recursive: true });

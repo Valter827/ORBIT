@@ -31,7 +31,7 @@ try {
   // Production never falls back to an unsigned build.
   if (production) sign("Preflight");
   const stale = path.join(root, ".desktop-cache", "pre-build-" + version + "-" + Date.now());
-  for (const file of ["src-tauri/target/release/ORBIT.exe", "src-tauri/target/release/bundle/nsis/ORBIT_" + version + "_x64-setup.exe", "validation/release-v" + version + ".json", "release/ORBIT-" + version + "-windows-x64"]) {
+  for (const file of ["src-tauri/target/release/ORBIT.exe", "src-tauri/target/release/ORBIT.exe.nsis", "src-tauri/target/release/bundle/nsis/ORBIT_" + version + "_x64-setup.exe", "validation/release-v" + version + ".json", "release/ORBIT-" + version + "-windows-x64"]) {
     if (fs.existsSync(file)) { fs.mkdirSync(stale,{recursive:true}); fs.renameSync(file,path.join(stale,path.basename(file))); movedOutputs.push(file); }
   }
   fs.mkdirSync("validation", { recursive: true });
@@ -53,7 +53,7 @@ try {
     args.push("--config", config);
   }
   run(process.execPath, args);
-  const app = path.join(root, "src-tauri/target/release/ORBIT.exe");
+  const app = path.join(root, "src-tauri/target/release/ORBIT.exe.nsis");
   const installer = path.join(root, `src-tauri/target/release/bundle/nsis/ORBIT_${version}_x64-setup.exe`);
   if (production) { sign("Verify", app); sign("Verify", installer); }
   const artifacts = [app, installer].map(file => ({
