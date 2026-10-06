@@ -100,7 +100,7 @@ export async function publicGet(
       },
       (response) => {
         if ([301, 302, 303, 307, 308].includes(response.statusCode ?? 0)) {
-          response.resume();
+          response.destroy();
           if (redirects >= 3 || !response.headers.location) {
             reject(new Error("Web redirect limit reached."));
             return;

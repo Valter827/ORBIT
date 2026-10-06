@@ -153,3 +153,33 @@ test("Intent handles freshness, Steam, explicit URLs and location clarification 
   for (const input of ["private\nlog text", "my memory contains cobalt", "API_KEY=secret", "C:\\Users\\person\\file"])
     assert.equal(publicQuery(input), null);
 });
+
+test("Official link requests minimize wording and reject unrelated provider results before fetching", async () => {
+  let calls = 0,
+    sent = "";
+  const g = new InternetGateway(
+    async (url) => {
+      calls++;
+      return { url, body: "<title>Unrelated</title><p>Unrelated content</p>", type: "text/html" };
+    },
+    {
+      id: "controlled-search",
+      async search(input) {
+        sent = input.query;
+        return [
+          {
+            title: "Ollama maybe",
+            url: "https://unrelated.example.com/",
+            snippet: "Not the official site",
+            provider: "test",
+            retrievedAt: new Date().toISOString(),
+          },
+        ];
+      },
+    },
+  );
+  const r = await g.research("Find the official Ollama website and send its link.", allowed, signal(), "fast");
+  assert.equal(sent, "ollama official website");
+  assert.equal(calls, 0);
+  assert.equal(r.sources.length, 0);
+});

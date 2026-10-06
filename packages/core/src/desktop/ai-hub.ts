@@ -345,6 +345,8 @@ export class AIHub {
       })
       .strict()
       .parse(value);
+    if (input.pageId && input.files.length)
+      throw new Error("Remove file attachments before using selected page context.");
     const a: ActiveChat = {
       id: randomUUID(),
       conversationId: input.conversationId ?? randomUUID(),
@@ -472,9 +474,7 @@ export class AIHub {
         } else if (
           (intent.requested || input.webConsent || settings.mode !== "fast") &&
           !plan.casual &&
-          !plan.memory &&
-          plan.kind !== "knowledge" &&
-          plan.kind !== "writing" &&
+          (intent.requested || (!plan.memory && plan.kind !== "knowledge" && plan.kind !== "writing")) &&
           !input.files.length &&
           (!knowledge.sources.length || intent.fresh || input.verify || intent.requested)
         ) {
@@ -522,7 +522,10 @@ export class AIHub {
             /prefer|предпоч|my |мо(?:й|его|и) |язык.*(?:выбрать|использовать)|language.*(?:choose|use)/iu.test(
               input.request,
             ));
+        const linkOnly =
+          /ссылк|\blink\b/iu.test(input.request) && !/как|объясни|расскажи|how|explain/iu.test(input.request);
         const shouldVerify =
+          !linkOnly &&
           (!personalContext || input.verify || /verify|проверь|проверить/iu.test(input.request)) &&
           factualVerification(input.request, plan.kind, input.verify || (plan.verify && settings.mode !== "deep")) &&
           (webSources.length > 0 ||
@@ -630,6 +633,7 @@ export class AIHub {
         }
         if (intent.requested && !webSources.length && !input.pageId)
           a.text = a.intelligence.webStatus ?? "Public Internet evidence unavailable.";
+        if (linkOnly && webSources.length) a.text = webSources.map((s) => s.name).join("\n");
         if (webSources.length) {
           const links = [...new Map(webSources.filter((s) => s.url).map((s) => [s.url!, s])).values()];
           a.text +=

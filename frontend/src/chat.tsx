@@ -544,7 +544,7 @@ export function ChatPanel({
                         setPublicQuery(question.slice(0, 240));
                       }}
                     >
-                      Allow once
+                      Research public sources
                     </Button>
                   )}
                 <Button variant="quiet" onClick={() => setMemoryNote((m.content ?? "").slice(0, 8000))}>
@@ -704,7 +704,7 @@ export function ChatPanel({
                 setWebPending(undefined);
               }}
             >
-              Search web
+              Allow once
             </Button>
           </div>
         </Modal>

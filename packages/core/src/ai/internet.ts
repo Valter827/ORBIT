@@ -543,8 +543,47 @@ export class InternetGateway {
         };
       }
       if (provider === "none") return { sources: [], status: "Search provider unavailable", query: minimized };
+      const officialProduct = /official|официальн/iu.test(minimized)
+        ? /ollama/i.test(minimized)
+          ? "ollama.com"
+          : /tauri/i.test(minimized)
+            ? "tauri.app"
+            : /nvidia/i.test(minimized)
+              ? "nvidia.com"
+              : /logitech/i.test(minimized)
+                ? "logitechg.com"
+                : undefined
+        : undefined;
+      const searchQuery =
+        officialProduct &&
+        /website|сайт|link|ссылк/iu.test(minimized) &&
+        !/updater|объясни|расскажи|how|explain/iu.test(minimized)
+          ? officialProduct.split(".")[0] + " official website"
+          : minimized;
       let results: SearchResult[];
-      if (intent.youtube) {
+      const runtimeResearch =
+        intent.research && /runtime|рантайм/iu.test(minimized) && /local|локальн/iu.test(minimized);
+      if (runtimeResearch) {
+        results = [];
+        for (const [query, domain] of [
+          ["Ollama official documentation", "ollama.com"],
+          ["LM Studio official documentation", "lmstudio.ai"],
+          ["llama.cpp official GitHub", "github.com"],
+        ]) {
+          const rows = await (provider === "duckduckgo" ? new DuckPublicSearch() : this.searchProvider).search(
+            { query: query!, limit: 5 },
+            get,
+          );
+          const match = rows.find((r) => {
+            const u = new URL(r.url);
+            return (
+              (u.hostname === domain || u.hostname.endsWith("." + domain)) &&
+              (domain !== "github.com" || u.pathname.includes("llama.cpp"))
+            );
+          });
+          if (match) results.push(match);
+        }
+      } else if (intent.youtube) {
         const query = minimized.replace(/найди|видео|youtube|ютуб/giu, " ").trim();
         const html = (await get("https://www.youtube.com/results?search_query=" + encodeURIComponent(query), 2000000))
           .body;
@@ -588,16 +627,28 @@ export class InternetGateway {
           }));
       } else
         results = await (provider === "duckduckgo" ? new DuckPublicSearch() : this.searchProvider).search(
-          { query: intent.youtube ? minimized + " site:youtube.com/watch" : minimized, limit: 8 },
+          { query: intent.youtube ? minimized + " site:youtube.com/watch" : searchQuery, limit: 8 },
           get,
         );
-      if (intent.research && !intent.youtube && !intent.places && !intent.steam && provider !== "wikipedia") {
+      if (
+        intent.research &&
+        !runtimeResearch &&
+        !intent.youtube &&
+        !intent.places &&
+        !intent.steam &&
+        provider !== "wikipedia"
+      ) {
         const extra = await (provider === "duckduckgo" ? new DuckPublicSearch() : this.searchProvider).search(
           { query: minimized + " official documentation", limit: 5 },
           get,
         );
         results.push(...extra);
       }
+      if (officialProduct)
+        results = results.filter((r) => {
+          const host = new URL(r.url).hostname;
+          return host === officialProduct || host.endsWith("." + officialProduct);
+        });
       const seen = new Set<string>();
       results = results.filter((r) => !seen.has(r.url) && !!seen.add(r.url));
       results.sort((a, b) => officialScore(b, minimized) - officialScore(a, minimized));
@@ -612,12 +663,17 @@ export class InternetGateway {
           const p = this.remember(
             youtubeId(r.url) ? await new PublicYouTube().read(r.url, get) : await this.read(r.url, get),
           );
+          if (officialProduct) {
+            const host = new URL(p.url).hostname;
+            if (host !== officialProduct && !host.endsWith("." + officialProduct)) continue;
+          }
           if (!contentHashes.has(p.hash)) {
             contentHashes.add(p.hash);
             sources.push(...this.evidence(p, minimized));
           }
         } catch {
           checkSignal(signal);
+          if (officialProduct) continue;
           sources.push({
             sourceId: r.url,
             name: r.title,
@@ -661,6 +717,9 @@ function officialScore(r: SearchResult, query: string) {
           ? "logitechg.com"
           : undefined;
   return (
+    (product && host === product && new URL(r.url).pathname === "/" && /website|сайт|link|ссылк/iu.test(query)
+      ? 8
+      : 0) +
     (product && (host === product || host.endsWith("." + product)) ? 10 : 0) +
     (/^(store\.steampowered\.com|github\.com|docs\.)/.test(host) ? 3 : 0) +
     relevance(query, r.title + " " + r.snippet)

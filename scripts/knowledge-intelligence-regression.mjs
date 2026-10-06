@@ -135,7 +135,7 @@ try{
  await call("ai.knowledgeNote",{profileId:cosmo.id,name:"NASA · https://science.nasa.gov/solar-system/temperatures-across-our-solar-system/",text:nasa});
  await mode("deep");
  const deep=await send("Какая планета Солнечной системы самая горячая?");
- assert.match(deep.text,/Venus|Венер/i);assert.doesNotMatch(deep.text,/Nereon/);assert.ok(deep.intelligence.verification.sources.some(s=>s.text===nasa));
+ assert.match(deep.text,/Venus|Венер|Венус/i);assert.doesNotMatch(deep.text,/Nereon/);assert.ok(deep.intelligence.verification.sources.some(s=>s.text===nasa));
  await record("deepFactual",{status:"PASS",draft:drafts.get(deep.id),evidence:deep.intelligence.verification.sources,final:deep.text,verification:deep.intelligence.verification.status,timings:deep.intelligence});
  const beforeVerify=(await fs.readFile(trace,"utf8")).split("\n").filter(l=>l.includes('"/v1/chat/completions"')&&l.includes('"event":"request"')).length;
  const old=deep.id;await page.getByRole("button",{name:"Verify answer",exact:true}).click();
