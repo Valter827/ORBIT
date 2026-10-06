@@ -63,7 +63,7 @@ export function BrowserPanel({
         setResults(r.results ?? []);
         setError(r.status);
       } else {
-        const p = await core<BrowserPage>("ai.internet", { ...params, consent });
+        const p = await core<BrowserPage>("ai.internet", { ...request, consent });
         setPage(p);
         setAddress(p.url);
         setMatches([]);
