@@ -1,6 +1,8 @@
-# ORBIT 0.9.1 Windows Delivery Hardening
+# ORBIT 0.9.2 Native Acceptance
 
-COSMO 1.0. Continued from the 0.9.0 source ZIP. No Voice or Pilot additions.
+COSMO 1.0. Continued from the delivered 0.9.1 source (f3fcf2ffa015d3bbcb9856a7230f1d4a6ad75204). No feature additions. Native release-candidate acceptance is pending; older release sections below are historical.
+
+[Native acceptance gate](docs/NATIVE_ACCEPTANCE_092.md).
 
 [Windows release and installation guide](docs/WINDOWS_RELEASE.md). Build artifacts and native acceptance are separate gates: consult the release-status.json for the exact build, and the final acceptance report. Preparing CI is not a successful Windows release.
 
