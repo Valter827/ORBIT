@@ -154,13 +154,14 @@ test("Intent handles freshness, Steam, explicit URLs and location clarification 
     assert.equal(publicQuery(input), null);
 });
 
-test("Official link requests minimize wording and reject unrelated provider results before fetching", async () => {
+test("Official link requests reject unrelated search results and require live retrieval of directory candidates", async () => {
   let calls = 0,
     sent = "";
   const g = new InternetGateway(
     async (url) => {
       calls++;
-      return { url, body: "<title>Unrelated</title><p>Unrelated content</p>", type: "text/html" };
+      assert.equal(url, "https://ollama.com/");
+      throw new Error("Official destination unavailable");
     },
     {
       id: "controlled-search",
@@ -179,8 +180,8 @@ test("Official link requests minimize wording and reject unrelated provider resu
     },
   );
   const r = await g.research("Find the official Ollama website and send its link.", allowed, signal(), "fast");
-  assert.equal(sent, "ollama official website");
-  assert.equal(calls, 0);
+  assert.equal(sent, "site:ollama.com ollama official website");
+  assert.equal(calls, 1);
   assert.equal(r.sources.length, 0);
 });
 

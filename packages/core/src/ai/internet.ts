@@ -559,7 +559,7 @@ export class InternetGateway {
         officialProduct &&
         /website|сайт|link|ссылк/iu.test(minimized) &&
         !/updater|объясни|расскажи|how|explain/iu.test(minimized)
-          ? officialProduct.split(".")[0] + " official website"
+          ? "site:" + officialProduct + " " + officialProduct.split(".")[0] + " official website"
           : minimized;
       let results: SearchResult[];
       const runtimeResearch =
@@ -586,7 +586,7 @@ export class InternetGateway {
         }
       } else if (intent.youtube) {
         const query = minimized.replace(/найди|видео|youtube|ютуб/giu, " ").trim();
-        const html = (await get("https://www.youtube.com/results?search_query=" + encodeURIComponent(query), 2000000))
+        const html = (await get("https://www.youtube.com/results?search_query=" + encodeURIComponent(query), 3000000))
           .body;
         results = videoRows(embeddedJson(html, "var ytInitialData ="));
         if (!results.length) throw new Error("YouTube search unavailable: no public video results.");
@@ -649,6 +649,15 @@ export class InternetGateway {
         results = results.filter((r) => {
           const host = new URL(r.url).hostname;
           return host === officialProduct || host.endsWith("." + officialProduct);
+        });
+      // A curated official domain is only a fetch candidate, never evidence until retrieved.
+      if (officialProduct && !results.length && provider !== "wikipedia")
+        results.push({
+          title: officialProduct,
+          url: "https://" + officialProduct + "/",
+          snippet: "Official directory candidate; retrieval required",
+          provider: "official-domain-directory",
+          retrievedAt: new Date().toISOString(),
         });
       const seen = new Set<string>();
       results = results.filter((r) => !seen.has(r.url) && !!seen.add(r.url));
