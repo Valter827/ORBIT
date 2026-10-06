@@ -527,7 +527,8 @@ export class AIHub {
         const shouldVerify =
           !linkOnly &&
           (!personalContext || input.verify || /verify|проверь|проверить/iu.test(input.request)) &&
-          factualVerification(input.request, plan.kind, input.verify || (plan.verify && settings.mode !== "deep")) &&
+          (!!input.pageId ||
+            factualVerification(input.request, plan.kind, input.verify || (plan.verify && settings.mode !== "deep"))) &&
           (webSources.length > 0 ||
             plan.verify ||
             (settings.mode !== "fast" &&
@@ -614,6 +615,18 @@ export class AIHub {
           if ("failure" in checked && typeof checked.failure === "string")
             a.intelligence.verificationFailure = checked.failure;
           a.intelligence.inferenceCalls = inference.calls;
+          if (webSources.length && checked.verification.status === "Could not verify") {
+            const excerpts = webSources.slice(0, 3).map((source) => ({ ...source, text: source.text.slice(0, 1200) }));
+            const note =
+              "The draft could not be verified against the retrieved page. These are source excerpts, not a verified summary.";
+            checked.text =
+              note +
+              "\n\n" +
+              excerpts
+                .map((source) => "> " + source.text.replace(/\n/g, "\n> ") + "\n\nSource: " + source.name)
+                .join("\n\n");
+            checked.verification = { status: "Sources found", sources: excerpts, note, corrected: true };
+          }
           a.text = checked.text;
           a.intelligence.verification = checked.verification;
           a.intelligence.verificationMs = performance.now() - verificationStarted;

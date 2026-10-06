@@ -183,3 +183,13 @@ test("Official link requests minimize wording and reject unrelated provider resu
   assert.equal(calls, 0);
   assert.equal(r.sources.length, 0);
 });
+
+test("Reader preserves accessibility labels that distinguish unsupported table entries", () => {
+  const page = extractPage(
+    '<main><table><tr><td>Windows</td><td><svg aria-label="Full support"><script>evil()</script></svg></td></tr><tr><td>Android</td><td><svg aria-label="No support"><path d="ignored"/></svg></td></tr></table></main>',
+    "https://example.com/",
+  );
+  assert.match(page.text, /Windows Full support/);
+  assert.match(page.text, /Android No support/);
+  assert.doesNotMatch(page.text, /evil|ignored/);
+});

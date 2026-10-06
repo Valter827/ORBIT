@@ -69,8 +69,9 @@ export function internetIntent(text: string) {
 const clean = (s: string) => s.replace(/\s+/g, " ").trim();
 function content(node: ReturnType<typeof parseDocument>["children"][number]): string {
   if ("data" in node && !("name" in node)) return node.data;
-  if ("name" in node && /^(script|style|noscript|svg|nav|footer|header|form|button|iframe)$/i.test(node.name))
-    return "";
+  if ("name" in node && "attribs" in node && /^(svg|img)$/i.test(node.name))
+    return clean(node.attribs["aria-label"] ?? node.attribs.alt ?? "").slice(0, 240);
+  if ("name" in node && /^(script|style|noscript|nav|footer|header|form|button|iframe)$/i.test(node.name)) return "";
   return "children" in node ? node.children.map(content).join(" ") : "";
 }
 export function extractPage(html: string, url: string, depth = 0): WebPage {
