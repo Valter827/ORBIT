@@ -1,3 +1,4 @@
+import { BrowserPanel, openPublicLink, type PageContext } from "./browser";
 import { readPreference, writePreference, focusComposer, chatGroup, type RecentChat } from "./chat-ui";
 import { LocalSetup } from "./local-setup";
 import { SensePanel } from "./sense";
@@ -13,8 +14,46 @@ import { Logo, Button, Modal, Quick, Approval, EventList, Files, ErrorNotice, Ic
 import { SettingsPanel } from "./settings";
 import "./style.css";
 import { matchesShortcut } from "./keyboard";
-const pages = ["Home", "My AIs", "Create AI", "Projects", "Agents", "Knowledge", "Memory", "Files", "Settings"];
+const pages = [
+  "Home",
+  "My AIs",
+  "Create AI",
+  "Projects",
+  "Agents",
+  "Knowledge",
+  "Memory",
+  "Browser",
+  "Files",
+  "Settings",
+];
 function App() {
+  const [browserInitial, setBrowserInitial] = useState<{ url: string; token: number }>();
+  const [pageContext, setPageContext] = useState<PageContext>();
+
+  useEffect(() => {
+    const open = (event: Event) => {
+      const url = (event as unknown as CustomEvent<string>).detail;
+      setBrowserInitial({ url, token: Date.now() });
+      setPage("Browser");
+    };
+    const click = (event: MouseEvent) => {
+      const anchor = (event.target as HTMLElement).closest?.("a[href]");
+      if (!anchor) return;
+      event.preventDefault();
+      const href = anchor.getAttribute("href") ?? "";
+      if (!/^https:\/\//i.test(href)) {
+        setError("Only public HTTPS links are supported.");
+        return;
+      }
+      void openPublicLink(href).catch((e) => setError(errorText(e)));
+    };
+    window.addEventListener("orbit-browser-open", open as unknown as EventListener);
+    document.addEventListener("click", click);
+    return () => {
+      window.removeEventListener("orbit-browser-open", open as unknown as EventListener);
+      document.removeEventListener("click", click);
+    };
+  }, []);
   const [collapsed, setCollapsed] = useState(() => readPreference("sidebar") === "collapsed");
   const [recent, setRecent] = useState<RecentChat[]>([]);
   const [historyQuery, setHistoryQuery] = useState("");
@@ -68,6 +107,9 @@ function App() {
     setStatus(s);
     setHistory(h);
   }, []);
+  useEffect(() => {
+    setPageContext(undefined);
+  }, [ai?.selected, status?.workspace, newChatToken]);
   const run = async (fn: () => Promise<unknown>) => {
     setBusy(true);
     setError("");
@@ -218,6 +260,7 @@ function App() {
             ["Projects", "Projects", "folder"],
             ["Knowledge", "Knowledge", "book"],
             ["Memory", "Memory", "memory"],
+            ["Browser", "Browser", "book"],
             ["Agents", "Agent activity", "orbit"],
             ["Files", "Files", "file"],
           ].map(([name, label, icon]) => (
@@ -386,6 +429,8 @@ function App() {
               {ai && (
                 <div hidden={mode !== "Chat"}>
                   <ChatPanel
+                    pageContext={pageContext}
+                    onClearPage={() => setPageContext(undefined)}
                     key={status?.workspace ?? ""}
                     ai={ai}
                     request={request}
@@ -630,6 +675,19 @@ function App() {
               <KnowledgePanel key={ai.selected} profileId={ai.selected} />
               <KnowledgeSettings />
             </>
+          )}
+          {page === "Browser" && ai && (
+            <BrowserPanel
+              key={ai.selected}
+              ai={ai}
+              initial={browserInitial}
+              onAsk={(p) => {
+                setPageContext({ id: p.id, title: p.title, profileId: ai.selected });
+                setPage("Home");
+                setMode("Chat");
+                setRequest("Что написано на этой странице?");
+              }}
+            />
           )}
           {page === "Memory" && <MemoryPanel key={ai?.selected + ":" + (status?.workspace ?? "")} />}
           {page === "Settings" && (

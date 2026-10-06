@@ -167,6 +167,9 @@ async fn core_command(
 ) -> Result<Value, String> {
     main_only(&window)?;
     if ![
+        "ai.internet",
+        "ai.internetPlan",
+        "ai.internetSettings",
         "ai.preview",
         "ai.packagePreview",
         "ai.versions",
@@ -450,6 +453,20 @@ async fn save_settings(
     .map_err(|_| "Settings worker failed")?
 }
 #[tauri::command]
+async fn open_public_url(app: AppHandle, window: WebviewWindow, url: String) -> Result<(), String> {
+    main_only(&window)?;
+    let core = app.state::<AppState>().core.clone();
+    let checked = tauri::async_runtime::spawn_blocking(move || {
+        core.call("ai.internet", json!({"action":"validate","url":url}))
+    })
+    .await
+    .map_err(|_| "URL validation failed")??;
+    let target = checked["url"].as_str().ok_or("Invalid public URL")?;
+    app.opener()
+        .open_url(target, None::<&str>)
+        .map_err(|_| "Cannot open system browser".to_string())
+}
+#[tauri::command]
 fn window_action(app: AppHandle, window: WebviewWindow, action: String) -> Result<(), String> {
     main_only(&window)?;
     match action.as_str() {
@@ -561,6 +578,7 @@ fn main() {
             select_project,
             save_settings,
             window_action,
+            open_public_url,
             quick_submit,
             quick_sense
         ])

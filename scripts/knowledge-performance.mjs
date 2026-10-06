@@ -13,6 +13,6 @@ const indexingMs=performance.now()-started,count=hub.store.db.prepare("SELECT CO
 assert.equal(count,10000);
 const latency=[];let result;
 for(let i=0;i<20;i++){const start=performance.now();result=await hub.knowledge.retrieve(profile.id,"ORBIT_BENCH_7349");latency.push(performance.now()-start);assert.ok(result.sources.some(s=>s.text.includes("ORBIT_BENCH_7349")));}
-const evidence={version:"0.9.2",date:new Date().toISOString(),status:"PASS",corpus:"controlled generated data",chunks:count,documents:200,indexingMs,retrievalMs:latency,rssBefore:rss,rssAfter:process.memoryUsage().rss,diagnostics:result.diagnostics};
+const evidence={version:"0.9.3",date:new Date().toISOString(),status:"PASS",corpus:"controlled generated data",chunks:count,documents:200,indexingMs,retrievalMs:latency,rssBefore:rss,rssAfter:process.memoryUsage().rss,diagnostics:result.diagnostics};
 hub.store.db.exec("PRAGMA wal_checkpoint(TRUNCATE)");evidence.databaseBytes=(await fs.stat(path.join(base,"database","ai.sqlite"))).size;await hub.shutdown();
 await fs.writeFile("validation/knowledge-performance.json",JSON.stringify(evidence,null,2));console.log(JSON.stringify(evidence));

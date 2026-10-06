@@ -4,7 +4,7 @@ export type Personality =
 export type Workflow = { id: string; name: string; steps: string[] };
 export type Intelligence = {
   web?: "off" | "ask" | "allow";
-  searchProvider?: "none" | "wikipedia";
+  searchProvider?: "none" | "wikipedia" | "bing" | "duckduckgo";
   mode: "fast" | "balanced" | "deep";
   auto: boolean;
   local: boolean;
@@ -16,7 +16,7 @@ export type Intelligence = {
 };
 export const intelligenceDefaults: Intelligence = {
   web: "ask",
-  searchProvider: "wikipedia",
+  searchProvider: "bing",
   mode: "balanced",
   auto: false,
   local: true,

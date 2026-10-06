@@ -1,3 +1,11 @@
+# ORBIT 0.9.3 Internet & Browser
+
+COSMO 1.0. Public search, a bounded static Browser reader, Steam/Places/YouTube providers and explicit page context. No Voice or Pilot.
+
+[Internet & Browser guide](docs/INTERNET_BROWSER.md). Build, real-provider, browser and native acceptance are separate evidence scopes.
+
+---
+
 # ORBIT 0.9.2 Native Acceptance
 
 COSMO 1.0. Continued from the delivered 0.9.1 source (f3fcf2ffa015d3bbcb9856a7230f1d4a6ad75204). No feature additions. Native release-candidate acceptance is pending; older release sections below are historical.

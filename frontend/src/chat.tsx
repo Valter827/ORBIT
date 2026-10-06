@@ -1,3 +1,4 @@
+import type { PageContext } from "./browser";
 import { MemorySuggestions } from "./memory";
 import { readPreference, writePreference, focusComposer, type RecentChat } from "./chat-ui";
 import { useState, useEffect, useRef } from "react";
@@ -56,6 +57,8 @@ type Generation = {
   memoryUsed?: Array<{ id: string; category: string }>;
 };
 export function ChatPanel({
+  pageContext,
+  onClearPage,
   ai,
   request,
   setRequest,
@@ -74,6 +77,8 @@ export function ChatPanel({
   onSense,
   onProject,
 }: {
+  pageContext?: PageContext;
+  onClearPage: () => void;
   visible: boolean;
   openChat?: { id: string; token: number };
   onHistory: (items: RecentChat[]) => void;
@@ -111,6 +116,7 @@ export function ChatPanel({
     [attachedFiles, setAttachedFiles] = useState<string[]>([]);
   const [contextOpen, setContextOpen] = useState(false);
   const [webQuestion, setWebQuestion] = useState<string>();
+  const [webPending, setWebPending] = useState<{ regenerate: boolean; verify: boolean }>();
   const [publicQuery, setPublicQuery] = useState("");
   useEffect(() => {
     const resize = () => {
@@ -334,6 +340,29 @@ export function ChatPanel({
     if (active.current || !text.trim() || needsSetup || loadingHistory || !restored) return;
     active.current = true;
     setStarting(true);
+    if (!webConsent && !pageContext && !verify) {
+      try {
+        const plan = await core<{ requested: boolean; query: string | null; policy: string; localOnly: boolean }>(
+          "ai.internetPlan",
+          { request: text },
+        );
+        if (plan.requested && plan.policy === "ask" && !plan.localOnly) {
+          setWebQuestion(text);
+          setPublicQuery(plan.query ?? "");
+          setWebPending({ regenerate, verify });
+          active.current = false;
+          setStarting(false);
+          return;
+        }
+      } catch (e) {
+        setError(errorText(e));
+        active.current = false;
+        setStarting(false);
+        return;
+      }
+    }
+    active.current = true;
+    setStarting(true);
     setError("");
     try {
       const response = await core<{ id: string; conversationId: string }>("chat.start", {
@@ -343,6 +372,7 @@ export function ChatPanel({
         files: selectedFiles,
         regenerate,
         verify,
+        ...(pageContext?.profileId === ai.selected ? { pageId: pageContext.id } : {}),
         webConsent,
         ...(webConsent ? { publicQuery } : {}),
       });
@@ -378,6 +408,11 @@ export function ChatPanel({
   }, [busy]);
   return (
     <section className={"chat-panel" + (contextOpen ? " with-context" : "")} aria-label="Conversation">
+      {pageContext && (
+        <div className="page-context">
+          Page context active: {pageContext.title} <Button onClick={onClearPage}>Remove page context</Button>
+        </div>
+      )}
       {needsSetup && (
         <div className="brain-setup">
           <h3>{profile?.name ?? "Your AI"} needs a brain</h3>
@@ -509,7 +544,7 @@ export function ChatPanel({
                         setPublicQuery(question.slice(0, 240));
                       }}
                     >
-                      Search web
+                      Allow once
                     </Button>
                   )}
                 <Button variant="quiet" onClick={() => setMemoryNote((m.content ?? "").slice(0, 8000))}>
@@ -652,13 +687,21 @@ export function ChatPanel({
             <input value={publicQuery} maxLength={240} onChange={(e) => setPublicQuery(e.target.value)} />
           </label>
           <div className="actions">
-            <Button onClick={() => setWebQuestion(undefined)}>Answer without web</Button>
+            <Button
+              onClick={() => {
+                setWebQuestion(undefined);
+                setWebPending(undefined);
+              }}
+            >
+              Cancel
+            </Button>
             <Button
               disabled={!publicQuery.trim()}
               onClick={() => {
                 const question = webQuestion;
                 setWebQuestion(undefined);
-                void send(question, true, true, true);
+                void send(question, webPending?.regenerate ?? true, webPending?.verify ?? true, true);
+                setWebPending(undefined);
               }}
             >
               Search web

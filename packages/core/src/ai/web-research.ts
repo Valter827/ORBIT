@@ -30,10 +30,7 @@ export function publicAddress(address: string): boolean {
   }
   // Accept only global unicast; excludes mapped IPv4, loopback, ULA, link-local and multicast.
   return (
-    isIP(address) === 6 &&
-    /^[23][0-9a-f]{3}:/i.test(address) &&
-    !/^2001:(?:0:|db8:|10:|20:)/i.test(address) &&
-    !/^2002:/i.test(address)
+    isIP(address) === 6 && /^[23][0-9a-f]{3}:/i.test(address) && !/^2001:/i.test(address) && !/^2002:/i.test(address)
   );
 }
 export function publicUrl(value: string): URL {
@@ -52,6 +49,27 @@ export function publicUrl(value: string): URL {
   url.hash = "";
   return url;
 }
+export async function resolvePublic(value: string, signal: AbortSignal) {
+  const host = publicUrl(value).hostname.replace(/^\[|\]$/g, "");
+  checkSignal(signal);
+  const bounded = AbortSignal.any([signal, AbortSignal.timeout(8000)]);
+  let onAbort: () => void = () => {};
+  try {
+    const addresses = await Promise.race([
+      lookup(host, { all: true }),
+      new Promise<never>((_, reject) => {
+        onAbort = () => reject(new Error("Web lookup cancelled or timed out."));
+        bounded.addEventListener("abort", onAbort, { once: true });
+      }),
+    ]);
+    checkSignal(bounded);
+    if (!addresses.length || addresses.some((a) => !publicAddress(a.address)))
+      throw new Error("Private or reserved web destination blocked.");
+    return addresses;
+  } finally {
+    bounded.removeEventListener("abort", onAbort);
+  }
+}
 /** Resolve every hop, reject mixed public/private answers and pin the validated address for TLS. */
 export async function publicGet(
   value: string,
@@ -60,18 +78,9 @@ export async function publicGet(
   redirects = 0,
 ): Promise<{ url: string; body: string; type: string }> {
   checkSignal(signal);
-  const url = publicUrl(value),
-    host = url.hostname.replace(/^\[|\]$/g, "");
+  const url = publicUrl(value);
   const bounded = AbortSignal.any([signal, AbortSignal.timeout(8000)]);
-  const addresses = await Promise.race([
-    lookup(host, { all: true }),
-    new Promise<never>((_, reject) => {
-      bounded.addEventListener("abort", () => reject(new Error("Web lookup cancelled or timed out.")), { once: true });
-    }),
-  ]);
-  checkSignal(bounded);
-  if (!addresses.length || addresses.some((a) => !publicAddress(a.address)))
-    throw new Error("Private or reserved web destination blocked.");
+  const addresses = await resolvePublic(value, bounded);
   const selected = addresses[0]!;
   return new Promise((resolve, reject) => {
     const request = https.get(
@@ -82,7 +91,7 @@ export async function publicGet(
         headers: {
           accept: "text/html, application/json, text/plain",
           "accept-encoding": "identity",
-          "user-agent": "ORBIT/0.7.1 (user-requested public research)",
+          "user-agent": "ORBIT/0.9.3 (+https://github.com/Valter827/ORBIT; user-requested public research)",
         },
         lookup: (_name, options, callback) => {
           if (options.all) callback(null, [selected]);
@@ -105,11 +114,11 @@ export async function publicGet(
         const type = response.headers["content-type"] ?? "";
         if (
           response.statusCode !== 200 ||
-          !/text\/html|text\/plain|application\/json/i.test(type) ||
+          !/text\/html|text\/plain|application\/json|(?:text|application)\/xml|application\/rss\+xml/i.test(type) ||
           (response.headers["content-encoding"] && response.headers["content-encoding"] !== "identity")
         ) {
           response.destroy();
-          reject(new Error("Web response is unavailable or unsupported."));
+          reject(new Error(`Web response unavailable or unsupported (HTTP ${response.statusCode ?? 0}).`));
           return;
         }
         const chunks: Buffer[] = [];
@@ -213,7 +222,7 @@ export function publicQuery(request: string, approvedQuery?: string): string | n
     !text ||
     text.length > 240 ||
     redact(text).text !== text ||
-    /[\r\n{}]|(?:api[_ -]?key|password|secret|token)\s*[:=]|[A-Z]:\\|\b(?:my|our) (?:project|code|notes|memory|file|screen|window)|мой|моих|проект|памят|экран|скидывал|обсуждали|@/iu.test(
+    /[\r\n{}]|(?:^|\s)\/(?:home|Users|etc|var|mnt|private|tmp)\/|(?:api[_ -]?key|password|secret|token)\s*[:=]|[A-Z]:\\|\b(?:my|our) (?:project|code|notes|memory|file|screen|window)|мой|моих|проект|памят|экран|скидывал|обсуждали|@/iu.test(
       text,
     )
   )

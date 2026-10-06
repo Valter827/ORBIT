@@ -1,10 +1,10 @@
-# ORBIT 0.9.2 Windows release
+# ORBIT 0.9.3 Windows release
 
 ## End users
 
-Download the artifact group `ORBIT-0.9.2-windows-x64` from a successful run of the Windows workflow. Check its commit and SHA-256 against `release-status.json` and `SHA256SUMS.txt`. Do not substitute an older ORBIT executable.
+Download the artifact group `ORBIT-0.9.3-windows-x64` from a successful run of the Windows workflow. Check its commit and SHA-256 against `release-status.json` and `SHA256SUMS.txt`. Do not substitute an older ORBIT executable.
 
-Run `ORBIT_0.9.2_x64-setup.exe`, install for the current user, then open ORBIT through its Desktop or Start Menu shortcut. For portable use, extract `ORBIT_0.9.2_portable_x64.zip` completely and open `ORBIT/ORBIT.exe`. The loose EXE alone does not include the sidecar resources: use the installer or portable ZIP.
+Run `ORBIT_0.9.3_x64-setup.exe`, install for the current user, then open ORBIT through its Desktop or Start Menu shortcut. For portable use, extract `ORBIT_0.9.3_portable_x64.zip` completely and open `ORBIT/ORBIT.exe`. The loose EXE alone does not include the sidecar resources: use the installer or portable ZIP.
 
 WebView2 Evergreen Runtime is required. The installer can download its official bootstrapper; a portable installation needs WebView2 already installed. Install Ollama separately from https://ollama.com/download/windows and obtain `gemma3:4b` for chat and, optionally, `embeddinggemma:300m` for semantic Knowledge retrieval. Models are not included. In ORBIT choose the local Ollama brain, open COSMO and enter a question. Ordinary use requires no terminal, npm, Rust or development server.
 
@@ -20,17 +20,17 @@ Node 24.18.0 (`.node-version`), npm 11.16.0 (`packageManager`), Rust/Cargo 1.98.
 
 Run `npm ci`, `npm run check:release`, `cargo fmt --manifest-path src-tauri/Cargo.toml --check`, then `npm run build:desktop`. This is a production Tauri frontend and bundled Node/core/parser build, despite the unsigned-test signing label. `npm run build:production` requires a trusted certificate and never silently falls back to unsigned.
 
-The build records stale-output quarantine in `validation/build-cleanup.json`. Fresh app/installer hashes are checked before packaging. Portable resources match the Tauri resource mappings. Existing release directories are quarantined, never merged. A failure creates `validation/build-failure-v0.9.2.json`; it is not a successful release receipt.
+The build records stale-output quarantine in `validation/build-cleanup.json`. Fresh app/installer hashes are checked before packaging. Portable resources match the Tauri resource mappings. Existing release directories are quarantined, never merged. A failure creates `validation/build-failure-v0.9.3.json`; it is not a successful release receipt.
 
-On this PC, the earlier 0.9.0 attempt was blocked when Windows refused to load a Rust build dependency (LoadLibraryExW, error 4551). Re-run normally for 0.9.2 and retain its own log. Do not change policy, rename blocked binaries or reuse an older EXE.
+On this PC, the earlier 0.9.0 attempt was blocked when Windows refused to load a Rust build dependency (LoadLibraryExW, error 4551). Re-run normally for 0.9.3 and retain its own log. Do not change policy, rename blocked binaries or reuse an older EXE.
 
 ## GitHub CI
 
-`.github/workflows/desktop-windows.yml` runs on main, delivery branches, pull requests, or workflow dispatch. It installs pinned tools, runs checks, builds NSIS, and collects EXE, installer, portable, metadata and checksums. npm downloads may be cached; compiled Rust targets are not restored. Source HEAD must exactly match `GITHUB_SHA` and be clean. Upload group: `ORBIT-0.9.2-windows-x64`; validation logs are a separate artifact.
+`.github/workflows/desktop-windows.yml` runs on main, delivery branches, pull requests, or workflow dispatch. It installs pinned tools, runs checks, builds NSIS, and collects EXE, installer, portable, metadata and checksums. npm downloads may be cached; compiled Rust targets are not restored. Source HEAD must exactly match `GITHUB_SHA` and be clean. Upload group: `ORBIT-0.9.3-windows-x64`; validation logs are a separate artifact.
 
 The disposable runner installs the exact installer, compares the installed EXE and every bundled resource to the build receipt, checks available shortcuts, verifies portable contents and uninstalls. This packaging smoke does not claim native chat, actual file pickers, real AI, Sense, portable launch/move, or persistence. Old fixture-based smoke scripts remain historical regression utilities and are not a substitute for real acceptance.
 
-After CI succeeds, download that exact artifact, verify hashes, and perform the native acceptance checklist from the 0.9.2 request. Record the run URL, commit, WebView2 version, exact EXE path and hashes. Do not locally rebuild after downloading and call it the tested CI artifact.
+After CI succeeds, download that exact artifact, verify hashes, and perform the native acceptance checklist from the 0.9.3 request. Record the run URL, commit, WebView2 version, exact EXE path and hashes. Do not locally rebuild after downloading and call it the tested CI artifact.
 
 ## Native release gate
 

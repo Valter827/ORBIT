@@ -5,7 +5,7 @@ import {AIHub} from "../dist/packages/core/src/desktop/ai-hub.js";
 import {Candidate} from "../dist/packages/core/src/desktop/personal-memory.js";
 import {createProfile} from "../dist/packages/core/src/ai/profiles.js";
 const out="validation/knowledge-memory-regression.json",base=path.resolve(".desktop-cache","memory-real-"+Date.now());
-const evidence={date:new Date().toISOString(),version:"0.9.2",model:"gemma3:4b",steps:{}};
+const evidence={date:new Date().toISOString(),version:"0.9.3",model:"gemma3:4b",steps:{}};
 const save=()=>fs.writeFile(out,JSON.stringify(evidence,null,2));
 const step=async(name,fn)=>{try{evidence.steps[name]={status:"PASS",...await fn()};}catch(error){evidence.steps[name]={status:"FAIL",error:String(error)};}await save();console.log(name+": "+evidence.steps[name].status);};
 const configs=[{id:"cosmo-local",name:"Ollama",type:"local",endpoint:"http://127.0.0.1:11434/v1/",localInferenceConfirmed:true,remoteAcknowledged:false}];

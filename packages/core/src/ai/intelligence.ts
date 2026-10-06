@@ -6,7 +6,7 @@ import { checkSignal } from "./transport.js";
 export const IntelligenceSettings = z
   .object({
     web: z.enum(["off", "ask", "allow"]).default("ask"),
-    searchProvider: z.enum(["none", "wikipedia"]).default("wikipedia"),
+    searchProvider: z.enum(["none", "wikipedia", "bing", "duckduckgo"]).default("bing"),
     mode: z.enum(["fast", "balanced", "deep"]).default("balanced"),
     auto: z.boolean().default(false),
     local: z.boolean().default(true),

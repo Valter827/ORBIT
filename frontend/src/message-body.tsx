@@ -44,7 +44,7 @@ export function MessageBody({ text }: { text: string }) {
       <Markdown
         remarkPlugins={[remarkGfm]}
         skipHtml
-        urlTransform={(url) => (/^(https?:\/\/|mailto:)/i.test(url) ? url : "")}
+        urlTransform={(url) => (/^https:\/\//i.test(url) ? url : "")}
         components={{
           pre: ({ children }) => {
             const element = Children.toArray(children).find((child) => isValidElement(child));

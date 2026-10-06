@@ -2020,3 +2020,7 @@ button.destructive:hover:not(:disabled) { background:#ce4557; border-color:#ce45
 .memory-suggestions { max-height: 240px; overflow: auto; flex-shrink: 0; margin: 8px 0; }
 .memory-proposal + .memory-proposal { border-top: 1px solid var(--border); margin-top: 12px; padding-top: 12px; }
 .memory-proposal p { overflow-wrap: anywhere; }
+
+.browser-panel { padding:24px; max-width:1100px; margin:auto; }
+.browser-text { white-space:pre-wrap; overflow-wrap:anywhere; max-height:55vh; overflow:auto; }
+.internet-card,.page-context { padding:12px; border:1px solid #303644; border-radius:10px; margin:12px 0; }

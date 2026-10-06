@@ -1,0 +1,8 @@
+{
+  "version": "0.9.3",
+  "sourceArchive": "ORBIT-0.9.2-native-source-20261006.zip",
+  "sha256": "EC1720E4A526CD56A743ADDCDBE428CFEA31B2AAEF098E171CD8067A73754E83",
+  "baselineCommit": "d51990d856d8327269f788e39b71b0610b3e5955",
+  "baselineNativeAcceptance": "Manually accepted by the user",
+  "evidenceZipUsedAsSource": false
+}

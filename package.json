@@ -1,6 +1,6 @@
 {
   "name": "orbit",
-  "version": "0.9.2",
+  "version": "0.9.3",
   "description": "ORBIT — Personal AI Agent. Your computer, understood.",
   "private": true,
   "type": "module",

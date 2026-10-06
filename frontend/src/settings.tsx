@@ -1,3 +1,4 @@
+import { InternetPreferences } from "./browser";
 import { intelligenceDefaults, type Intelligence } from "./ai-types";
 import { profileStatus } from "./ai-types";
 import { LocalModels } from "./local-models";
@@ -674,7 +675,7 @@ export function SettingsPanel({
                 is allowed.
               </p>
               <label>
-                Web Research
+                Internet Access
                 <select
                   value={intelligence.web ?? "ask"}
                   disabled={busy || !profile || aiState?.localOnly}
@@ -690,9 +691,13 @@ export function SettingsPanel({
                 <select
                   value={intelligence.searchProvider ?? "wikipedia"}
                   disabled={busy || !profile}
-                  onChange={(e) => saveIntelligence({ searchProvider: e.target.value as "none" | "wikipedia" })}
+                  onChange={(e) =>
+                    saveIntelligence({ searchProvider: e.target.value as "none" | "wikipedia" | "bing" | "duckduckgo" })
+                  }
                 >
                   <option value="none">Unavailable / disabled</option>
+                  <option value="duckduckgo">Public web · DuckDuckGo</option>
+                  <option value="bing">Public web · Bing RSS</option>
                   <option value="wikipedia">Wikipedia · official public API</option>
                 </select>
               </label>
@@ -700,6 +705,7 @@ export function SettingsPanel({
                 Local Only disables all web research. Queries use only the current public question; private files,
                 memories and screen content are excluded.
               </p>
+              <InternetPreferences />
               <PrivacyPanel />
               <Button onClick={() => onNavigate("Memory")}>Manage, review or export memories</Button>
               <p>Screen captures are ephemeral. Logs are redacted; review them before sharing.</p>
