@@ -23,7 +23,7 @@ Open links in offers System Browser or ORBIT Browser. System navigation uses the
 ## Search, places and video
 
 Examples:
-- «Найди Rust в Steam и скинь ссылку.» — queries Steam's public store metadata and reads the actual result page, avoiding invented application IDs.
+- «Найди Rust в Steam и скинь ссылку.» — queries Steam's public store metadata and reads the actual result page, avoiding invented application IDs. Current Steam prices, when returned by the official search API, include USD and the explicit US store region plus retrieval time; other regions, future prices and stock are not verified.
 - «Посмотри этот сайт и объясни его: https://v2.tauri.app/plugin/updater/» — extracts the public page and cites the retrieved URL.
 - «Найди компьютерный магазин в Харькове.» — queries Nominatim with the explicitly specified city, returning provider-supplied name/address/map link. Data © OpenStreetMap contributors, ODbL. Results are not a complete business directory, and no stock, rating or current opening status is fabricated.
 - «Найди видео на YouTube про Ollama.» — parses public YouTube video result metadata into title, channel, duration/date where supplied and clickable video URLs.

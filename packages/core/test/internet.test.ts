@@ -9,6 +9,7 @@ import {
   timestampUrl,
   BingPublicSearch,
   PublicYouTube,
+  SteamMetadata,
 } from "../src/ai/internet.js";
 import { publicQuery, publicAddress } from "../src/ai/web-research.js";
 const allowed = { policy: "allow" as const, localOnly: false };
@@ -193,4 +194,19 @@ test("Reader preserves accessibility labels that distinguish unsupported table e
   assert.match(page.text, /Windows Full support/);
   assert.match(page.text, /Android No support/);
   assert.doesNotMatch(page.text, /evil|ignored/);
+});
+
+test("Steam price uses actual bounded provider metadata with explicit currency and region", async () => {
+  const rows = await new SteamMetadata().steam("Rust Steam price", async (url) => ({
+    url,
+    type: "application/json",
+    body: JSON.stringify({
+      items: [
+        { id: 252490, name: "Rust", type: "app", price: { currency: "USD", final: 1999 } },
+        { id: 42, name: "Other", type: "app" },
+      ],
+    }),
+  }));
+  assert.match(rows[0]!.snippet, /USD 19\.99.*US store region/);
+  assert.match(rows[1]!.snippet, /Price\/stock not verified/);
 });

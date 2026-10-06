@@ -303,7 +303,7 @@ export class SteamMetadata implements PublicMetadataProvider {
       cc: "US",
     }).toString();
     const data = JSON.parse((await get(url.href, 150000)).body) as {
-      items?: Array<{ id: number; name: string; type: string }>;
+      items?: Array<{ id: number; name: string; type: string; price?: { currency?: string; final?: number } }>;
     };
     return (data.items ?? [])
       .filter((x) => x.type === "app" && Number.isSafeInteger(x.id) && typeof x.name === "string")
@@ -316,7 +316,14 @@ export class SteamMetadata implements PublicMetadataProvider {
       .map((x) => ({
         title: x.name,
         url: `https://store.steampowered.com/app/${x.id}/`,
-        snippet: "Official Steam Store search result. Price/stock not verified.",
+        snippet:
+          x.price?.currency === "USD" && Number.isSafeInteger(x.price.final) && x.price.final! >= 0
+            ? "Official Steam Store search metadata: " +
+              x.name +
+              " costs USD " +
+              (x.price.final! / 100).toFixed(2) +
+              " in the US store region at retrieval time. Price can change; other regions and stock are not verified."
+            : "Official Steam Store search result. Price/stock not verified.",
         provider: "steam-store",
         retrievedAt: new Date().toISOString(),
       }));
@@ -677,6 +684,7 @@ export class InternetGateway {
             const host = new URL(p.url).hostname;
             if (host !== officialProduct && !host.endsWith("." + officialProduct)) continue;
           }
+          if (intent.steam) p.text = r.snippet + "\n" + p.text;
           if (!contentHashes.has(p.hash)) {
             contentHashes.add(p.hash);
             sources.push(...this.evidence(p, minimized));
