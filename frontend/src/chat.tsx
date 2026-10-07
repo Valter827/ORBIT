@@ -25,6 +25,7 @@ type Generation = {
     analyzer?: string;
     routingReason?: string;
     webStatus?: string;
+    pageContext?: PageContext;
     searchMs?: number;
     verificationStage?: string;
     inferenceCalls?: number;
@@ -59,6 +60,7 @@ type Generation = {
 export function ChatPanel({
   pageContext,
   onClearPage,
+  onPageContext,
   ai,
   request,
   setRequest,
@@ -79,6 +81,7 @@ export function ChatPanel({
 }: {
   pageContext?: PageContext;
   onClearPage: () => void;
+  onPageContext: (page: PageContext) => void;
   visible: boolean;
   openChat?: { id: string; token: number };
   onHistory: (items: RecentChat[]) => void;
@@ -206,6 +209,7 @@ export function ChatPanel({
     return () => removeEventListener("orbit-history-changed", update);
   }, [ai.selected, workspace]);
   const openConversation = async (selected: string) => {
+    onClearPage();
     if (active.current) return;
     const ticket = ++historyEpoch.current;
     setLoadingHistory(true);
@@ -244,6 +248,7 @@ export function ChatPanel({
 
   const newChat = () => {
     if (active.current) return;
+    onClearPage();
     historyEpoch.current++;
     setRestored(true);
     setLoadingHistory(false);
@@ -318,6 +323,7 @@ export function ChatPanel({
             setId("");
             focusComposer(needsSetup);
             if (!g.error) setBrain("Ready");
+            if (!g.error && g.intelligence?.pageContext) onPageContext(g.intelligence.pageContext);
             if (!g.error)
               setMessages((prev) => [...prev, { role: "assistant", content: g.text, intelligence: g.intelligence }]);
             void loadHistory().catch((e) => setError(errorText(e)));
@@ -340,7 +346,9 @@ export function ChatPanel({
     if (active.current || !text.trim() || needsSetup || loadingHistory || !restored) return;
     active.current = true;
     setStarting(true);
-    if (!webConsent && !pageContext && !verify) {
+    const selectedPage = pageContext?.profileId === ai.selected && !/https:\/\//i.test(text) ? pageContext : undefined;
+    if (!selectedPage && pageContext) onClearPage();
+    if (!webConsent && !selectedPage && !verify) {
       try {
         const plan = await core<{ requested: boolean; query: string | null; policy: string; localOnly: boolean }>(
           "ai.internetPlan",
@@ -372,7 +380,7 @@ export function ChatPanel({
         files: selectedFiles,
         regenerate,
         verify,
-        ...(pageContext?.profileId === ai.selected ? { pageId: pageContext.id } : {}),
+        ...(selectedPage ? { pageId: selectedPage.id } : {}),
         webConsent,
         ...(webConsent ? { publicQuery } : {}),
       });

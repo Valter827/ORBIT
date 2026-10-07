@@ -4,6 +4,7 @@ export type Personality =
 export type Workflow = { id: string; name: string; steps: string[] };
 export type Intelligence = {
   web?: "off" | "ask" | "allow";
+  searchFallback?: "none" | "bing" | "duckduckgo";
   searchProvider?: "none" | "wikipedia" | "bing" | "duckduckgo";
   mode: "fast" | "balanced" | "deep";
   auto: boolean;

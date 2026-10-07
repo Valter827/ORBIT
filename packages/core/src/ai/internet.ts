@@ -3,6 +3,17 @@ import { parseDocument, DomUtils } from "htmlparser2";
 import { publicGet, publicUrl, publicQuery } from "./web-research.js";
 import { checkSignal } from "./transport.js";
 import { relevance, type Evidence } from "./intelligence.js";
+import {
+  normalizeTranscript,
+  retrieveCaptions,
+  transcriptChunks,
+  searchTranscript,
+  timestampLabel,
+  localMediaCapabilities,
+  type CaptionTrack,
+  type TranscriptChunk,
+  type TranscriptAttempt,
+} from "./transcripts.js";
 
 export type InternetPolicy = { policy: "off" | "ask" | "allow"; localOnly: boolean; consent?: boolean };
 export type SearchInput = { query: string; limit?: number; language?: string; region?: string; freshness?: string };
@@ -20,16 +31,41 @@ export type WebPage = {
   channel?: string;
   duration?: string;
   transcript?: "available" | "unavailable";
+  video?: {
+    id: string;
+    capabilities: {
+      metadata: "available" | "unavailable";
+      transcript: "available" | "unavailable";
+      visual: "unavailable";
+      audioTranscription: "unavailable";
+    };
+    language?: string;
+    provider?: string;
+    sourceUrl?: string;
+    attempts: TranscriptAttempt[];
+    chunks: TranscriptChunk[];
+  };
   segments?: Array<{ seconds: number; text: string; url: string }>;
 };
-export type InternetResult = { sources: Evidence[]; status: string; query?: string; results?: SearchResult[] };
+export type InternetResult = {
+  sources: Evidence[];
+  status: string;
+  query?: string;
+  results?: SearchResult[];
+  pageId?: string;
+  requestedSources?: number;
+  usableSources?: number;
+};
 type Get = (url: string, bytes?: number) => ReturnType<typeof publicGet>;
 export interface InternetSearchProvider {
   readonly id: string;
   search(input: SearchInput, get: Get): Promise<SearchResult[]>;
 }
 export interface YouTubeProvider {
-  read(url: string, get: Get): Promise<WebPage>;
+  read(url: string, get: Get, language?: string): Promise<WebPage>;
+  search(query: string, get: Get): Promise<SearchResult[]>;
+  metadata(id: string, get: Get): Promise<{ title: string; channel: string }>;
+  discover(id: string, get: Get): Promise<CaptionTrack[]>;
 }
 export interface PlacesProvider {
   find(query: string, get: Get): Promise<SearchResult[]>;
@@ -343,77 +379,111 @@ export function youtubeId(value: string): string | undefined {
 export function timestampUrl(id: string, seconds: number) {
   return `https://www.youtube.com/watch?v=${id}&t=${Math.max(0, Math.floor(seconds))}s`;
 }
-export function parseTranscript(xml: string, id: string) {
-  if (xml.trim().startsWith("{")) {
-    const data = JSON.parse(xml) as { events?: Array<{ tStartMs?: number; segs?: Array<{ utf8?: string }> }> };
-    return (data.events ?? [])
-      .slice(0, 1000)
-      .map((e) => ({
-        seconds: Number(e.tStartMs) / 1000,
-        text: clean((e.segs ?? []).map((s) => s.utf8 ?? "").join("")).slice(0, 700),
-      }))
-      .filter((x) => Number.isFinite(x.seconds) && x.seconds >= 0 && x.text)
-      .map((x) => ({ ...x, url: timestampUrl(id, x.seconds) }));
-  }
-  const doc = parseDocument(xml, { xmlMode: true });
-  return DomUtils.findAll((n) => n.name === "text" || n.name === "p", doc.children)
-    .slice(0, 1000)
-    .map((n) => ({
-      seconds: n.name === "p" ? Number(n.attribs.t) / 1000 : Number(n.attribs.start),
-      text: clean(DomUtils.textContent(n)).slice(0, 700),
-    }))
-    .filter((x) => Number.isFinite(x.seconds) && x.seconds >= 0 && x.text)
-    .map((x) => ({ ...x, url: timestampUrl(id, x.seconds) }));
+export function parseTranscript(body: string, id: string) {
+  return normalizeTranscript(body).map((s) => ({
+    ...s,
+    seconds: s.startMs / 1000,
+    url: timestampUrl(id, s.startMs / 1000),
+  }));
 }
 export class PublicYouTube implements YouTubeProvider {
-  async read(value: string, get: Get) {
-    const id = youtubeId(value);
-    if (!id) throw new Error("Unsupported YouTube URL.");
-    const url = `https://www.youtube.com/watch?v=${id}`;
+  async search(query: string, get: Get) {
+    const html = (await get("https://www.youtube.com/results?search_query=" + encodeURIComponent(query), 3000000)).body;
+    if (!html.trim() || /challenge-form|unusual traffic|consent.youtube.com\/m/i.test(html))
+      throw new Error("YouTube search provider unavailable or requires interaction.");
+    const rows = videoRows(embeddedJson(html, "var ytInitialData ="));
+    if (!rows.length) throw new Error("YouTube search unavailable: no public video results.");
+    return rows;
+  }
+  async metadata(id: string, get: Get) {
+    const url = "https://www.youtube.com/watch?v=" + id;
     const meta = JSON.parse(
       (await get("https://www.youtube.com/oembed?format=json&url=" + encodeURIComponent(url), 64000)).body,
     ) as { title?: string; author_name?: string };
-    const page: WebPage = {
-      id: randomUUID(),
-      url,
-      title: String(meta.title ?? "YouTube video").slice(0, 240),
-      channel: String(meta.author_name ?? "Unknown channel").slice(0, 160),
-      text: "Transcript unavailable. Metadata only; video has not been watched.",
-      retrievedAt: new Date().toISOString(),
-      hash: "",
-      links: [],
-      depth: 0,
-      mode: "Metadata only",
-      transcript: "unavailable",
-    };
-    // Only captions openly advertised in the public page. No authenticated API, cookie, signature or CAPTCHA bypass.
-    try {
-      const html = (await get(url, 2000000)).body;
-      const match = /"captionTracks"\s*:\s*(\[.*?\])/.exec(html);
-      if (match) {
-        const tracks = JSON.parse(match[1]!) as Array<{ baseUrl?: string }>;
-        const track = tracks.find((t) => typeof t.baseUrl === "string");
-        if (track?.baseUrl) {
-          const target = publicUrl(track.baseUrl);
-          if (!/(^|\.)youtube\.com$/.test(target.hostname) || target.pathname !== "/api/timedtext")
-            throw new Error("Unsafe caption source");
-          const segments = parseTranscript((await get(target.href, 600000)).body, id);
-          if (segments.length) {
-            page.segments = segments;
-            page.mode = "Transcript";
-            page.transcript = "available";
-            page.text = segments
-              .map((s) => `[${s.seconds}s] ${s.text} ${s.url}`)
-              .join("\n")
-              .slice(0, 32000);
-          }
+    if (typeof meta.title !== "string" || !meta.title.trim()) throw new Error("YouTube metadata unavailable.");
+    return { title: meta.title.slice(0, 240), channel: String(meta.author_name ?? "Unknown channel").slice(0, 160) };
+  }
+  async discover(id: string, get: Get): Promise<CaptionTrack[]> {
+    const html = (await get("https://www.youtube.com/watch?v=" + id, 2000000)).body;
+    const player = embeddedJson(html, "ytInitialPlayerResponse =") as
+      | {
+          videoDetails?: { videoId?: string };
+          captions?: { playerCaptionsTracklistRenderer?: { captionTracks?: CaptionTrack[] } };
         }
-      }
-    } catch {
-      /* Public restrictions or absent captions are reported as unavailable, never fabricated. */
+      | undefined;
+    if (player?.videoDetails?.videoId && player.videoDetails.videoId !== id) throw new Error("Video identity mismatch");
+    if (player) return player.captions?.playerCaptionsTracklistRenderer?.captionTracks ?? [];
+    const match = /"captionTracks"\s*:\s*(\[.*?\])/.exec(html);
+    return match ? (JSON.parse(match[1]!) as CaptionTrack[]) : [];
+  }
+  async read(value: string, get: Get, language = "en"): Promise<WebPage> {
+    const id = youtubeId(value);
+    if (!id) throw new Error("Unsupported YouTube URL.");
+    let meta = { title: "YouTube video", channel: "Unknown channel" },
+      metadata: "available" | "unavailable" = "unavailable";
+    try {
+      meta = await this.metadata(id, get);
+      metadata = "available";
+    } catch (error) {
+      if (/abort|cancel|timeout|budget/i.test(String(error))) throw error;
     }
-    page.hash = createHash("sha256").update(page.text).digest("hex");
-    return page;
+    let tracks: CaptionTrack[] = [];
+    const attempts: TranscriptAttempt[] = [];
+    try {
+      tracks = await this.discover(id, get);
+    } catch (error) {
+      if (/abort|cancel|timeout|budget/i.test(String(error))) throw error;
+      attempts.push({
+        provider: "youtube-track-discovery",
+        status: "unavailable",
+        reason: "Public caption discovery unavailable",
+      });
+    }
+    const captions = await retrieveCaptions(id, tracks, language, get);
+    attempts.push(...captions.attempts);
+    const result = captions.result,
+      chunks = result
+        ? transcriptChunks(result.segments, {
+            videoId: id,
+            title: meta.title,
+            channel: meta.channel,
+            language: result.language,
+          })
+        : [];
+    const text = result
+      ? result.segments
+          .map((s) => "[" + timestampLabel(s.startMs) + "–" + timestampLabel(s.endMs) + "] " + s.text)
+          .join("\n")
+      : "Transcript unavailable. Only title/channel metadata was accessed; the video has not been watched. Visual analysis and local audio transcription are unavailable in this build.";
+    return {
+      id: randomUUID(),
+      url: "https://www.youtube.com/watch?v=" + id,
+      title: meta.title,
+      channel: meta.channel,
+      text,
+      retrievedAt: new Date().toISOString(),
+      hash: createHash("sha256").update(text).digest("hex"),
+      links: result ? [{ title: "Published transcript source", url: result.sourceUrl }] : [],
+      depth: 0,
+      mode: result ? "Transcript" : "Metadata only",
+      transcript: result ? "available" : "unavailable",
+      ...(result
+        ? {
+            segments: result.segments.map((s) => ({
+              ...s,
+              seconds: s.startMs / 1000,
+              url: timestampUrl(id, s.startMs / 1000),
+            })),
+          }
+        : {}),
+      video: {
+        id,
+        capabilities: { metadata, transcript: result ? "available" : "unavailable", ...localMediaCapabilities },
+        ...(result ? { language: result.language, provider: result.provider, sourceUrl: result.sourceUrl } : {}),
+        attempts,
+        chunks,
+      },
+    };
   }
 }
 export function assertInternet(policy: InternetPolicy) {
@@ -426,6 +496,11 @@ export class InternetGateway {
   private pages = new Map<string, WebPage>();
   private cooling = new Map<string, number>();
   private active = new Set<AbortController>();
+  private requests = 0;
+  private health = new Map<string, { status: "Healthy" | "Rate limited" | "Temporarily unavailable"; at: string }>();
+  status() {
+    return { requests: this.requests, providers: Object.fromEntries(this.health), renderedPages: "NOT IMPLEMENTED" };
+  }
   constructor(
     private transport = publicGet,
     readonly searchProvider: InternetSearchProvider = new BingPublicSearch(),
@@ -467,12 +542,22 @@ export class InternetGateway {
       if ((this.cooling.get(host) ?? 0) > Date.now())
         throw new Error("Search temporarily unavailable: provider cooling down.");
       try {
+        this.requests++;
         const r = await this.transport(url, bounded, Math.min(limit, 4000000 - bytes));
+        this.health.set(host, { status: "Healthy", at: new Date().toISOString() });
+        while (this.health.size > 32) this.health.delete(this.health.keys().next().value!);
         bytes += Buffer.byteLength(r.body);
         checkSignal(bounded);
         return r;
       } catch (e) {
-        if (/429|503|rate limit/i.test(String(e))) this.cooling.set(host, Date.now() + 60000);
+        const limited = /429|503|rate limit/i.test(String(e));
+        if (limited) this.cooling.set(host, Date.now() + 60000);
+        this.health.set(host, {
+          status: limited ? "Rate limited" : "Temporarily unavailable",
+          at: new Date().toISOString(),
+        });
+        while (this.health.size > 32) this.health.delete(this.health.keys().next().value!);
+        while (this.cooling.size > 32) this.cooling.delete(this.cooling.keys().next().value!);
         throw e;
       }
     };
@@ -525,6 +610,7 @@ export class InternetGateway {
     signal: AbortSignal,
     mode: string,
     provider = "bing",
+    fallback = "none",
   ): Promise<InternetResult> {
     if (policy.localOnly || policy.policy === "off")
       return { sources: [], status: policy.localOnly ? "Local Only: Internet blocked" : "Internet Off" };
@@ -540,12 +626,26 @@ export class InternetGateway {
         query: minimized,
       };
     return this.session(policy, signal, async (get) => {
+      const search = async (input: SearchInput) => {
+        const primary = provider === "duckduckgo" ? new DuckPublicSearch() : this.searchProvider;
+        try {
+          const rows = await primary.search(input, get);
+          if (rows.length || fallback === "none" || fallback === provider) return rows;
+        } catch (error) {
+          checkSignal(signal);
+          if (fallback === "none" || fallback === provider || /abort|cancel|budget/i.test(String(error))) throw error;
+        }
+        return (fallback === "bing" ? new BingPublicSearch() : new DuckPublicSearch()).search(input, get);
+      };
       if (intent.url) {
         const page = this.remember(
-          youtubeId(intent.url) ? await new PublicYouTube().read(intent.url, get) : await this.read(intent.url, get),
+          youtubeId(intent.url)
+            ? await new PublicYouTube().read(intent.url, get, /[а-яё]/iu.test(query) ? "ru" : "en")
+            : await this.read(intent.url, get),
         );
         return {
           sources: this.evidence(page, minimized),
+          pageId: page.id,
           status: page.mode === "Metadata only" ? "Transcript unavailable — metadata only" : "Public page retrieved",
           query: minimized,
         };
@@ -578,10 +678,7 @@ export class InternetGateway {
           ["LM Studio official documentation", "lmstudio.ai"],
           ["llama.cpp official GitHub", "github.com"],
         ]) {
-          const rows = await (provider === "duckduckgo" ? new DuckPublicSearch() : this.searchProvider).search(
-            { query: query!, limit: 5 },
-            get,
-          );
+          const rows = await search({ query: query!, limit: 5 });
           const match = rows.find((r) => {
             const u = new URL(r.url);
             return (
@@ -593,10 +690,7 @@ export class InternetGateway {
         }
       } else if (intent.youtube) {
         const query = minimized.replace(/найди|видео|youtube|ютуб/giu, " ").trim();
-        const html = (await get("https://www.youtube.com/results?search_query=" + encodeURIComponent(query), 3000000))
-          .body;
-        results = videoRows(embeddedJson(html, "var ytInitialData ="));
-        if (!results.length) throw new Error("YouTube search unavailable: no public video results.");
+        results = await new PublicYouTube().search(query, get);
       } else if (intent.places) {
         results = await new PublicPlaces().find(minimized, get);
         return {
@@ -633,11 +727,7 @@ export class InternetGateway {
             provider: "wikipedia",
             retrievedAt: new Date().toISOString(),
           }));
-      } else
-        results = await (provider === "duckduckgo" ? new DuckPublicSearch() : this.searchProvider).search(
-          { query: intent.youtube ? minimized + " site:youtube.com/watch" : searchQuery, limit: 8 },
-          get,
-        );
+      } else results = await search({ query: searchQuery, limit: 8 });
       if (
         intent.research &&
         !runtimeResearch &&
@@ -646,10 +736,7 @@ export class InternetGateway {
         !intent.steam &&
         provider !== "wikipedia"
       ) {
-        const extra = await (provider === "duckduckgo" ? new DuckPublicSearch() : this.searchProvider).search(
-          { query: minimized + " official documentation", limit: 5 },
-          get,
-        );
+        const extra = await search({ query: minimized + " official documentation", limit: 5 });
         results.push(...extra);
       }
       if (officialProduct)
@@ -671,6 +758,7 @@ export class InternetGateway {
       results.sort((a, b) => officialScore(b, minimized) - officialScore(a, minimized));
       const sources: Evidence[] = [];
       const contentHashes = new Set<string>();
+      const organizations = new Set<string>();
       for (const r of results.slice(
         0,
         intent.youtube ? 1 : mode === "fast" ? 1 : mode === "deep" || intent.research ? 5 : 3,
@@ -685,7 +773,9 @@ export class InternetGateway {
             if (host !== officialProduct && !host.endsWith("." + officialProduct)) continue;
           }
           if (intent.steam) p.text = r.snippet + "\n" + p.text;
-          if (!contentHashes.has(p.hash)) {
+          const organization = new URL(p.url).hostname.replace(/^(?:www|docs|blog)\./, "");
+          if (!contentHashes.has(p.hash) && (!intent.research || !organizations.has(organization))) {
+            organizations.add(organization);
             contentHashes.add(p.hash);
             sources.push(...this.evidence(p, minimized));
           }
@@ -701,15 +791,81 @@ export class InternetGateway {
           });
         }
       }
+      const requestedSources = intent.research
+        ? Number(/\b([2-5])\b/.exec(query)?.[1] ?? (/три|three/iu.test(query) ? 3 : mode === "deep" ? 5 : 3))
+        : undefined;
+      const usableSources = new Set(
+        sources
+          .filter((s) => !s.text.startsWith("Search listing only"))
+          .map((s) => new URL(s.url!).hostname.replace(/^(?:www|docs|blog)\./, "")),
+      ).size;
       return {
         sources,
         results,
-        status: sources.length ? "Public sources retrieved" : "No public results available",
+        ...(requestedSources ? { requestedSources, usableSources } : {}),
+        status:
+          (sources.length ? "Public sources retrieved" : "No public results available") +
+          (requestedSources
+            ? ` · Requested sources: ${requestedSources}; usable sources: ${usableSources}${usableSources < requestedSources ? " — insufficient independent sources; comparison is partial" : ""}`
+            : ""),
         query: minimized,
       };
     });
   }
   evidence(page: WebPage, query: string): Evidence[] {
+    if (page.video && /what.*(?:shown|visible|see)|что.*(?:видно|показано|изображено)|кадр/iu.test(query))
+      return [
+        {
+          sourceId: page.id,
+          name: page.title,
+          text: "Video visual analysis unavailable. No frames were accessed. Transcript text cannot establish what is visible in a frame.",
+          url: page.url,
+          retrievedAt: page.retrievedAt,
+        },
+      ];
+    if (page.video?.chunks.length) {
+      const matches = searchTranscript(page.video.chunks, query);
+      const seeks = /when|timestamp|where.*(?:say|talk|mention)|в какой момент|где|когда|таймкод|\d+:\d{2}/iu.test(
+        query,
+      );
+      if (seeks && !matches.length)
+        return [
+          {
+            sourceId: page.id,
+            name: page.title,
+            text: "Transcript available, but no matching timestamp was found for this query. Do not invent a timestamp.",
+            url: page.url,
+            retrievedAt: page.retrievedAt,
+          },
+        ];
+      const selected = matches.length
+        ? matches
+        : [
+            page.video.chunks[0]!,
+            page.video.chunks[Math.floor(page.video.chunks.length / 2)]!,
+            page.video.chunks.at(-1)!,
+          ];
+      return selected.map((c) => ({
+        sourceId: page.id + ":" + c.startMs,
+        name: page.title + " · " + page.channel + " · " + timestampLabel(c.startMs),
+        text:
+          "Transcript (" +
+          c.language +
+          ", " +
+          page.video!.provider +
+          ") [" +
+          timestampLabel(c.startMs) +
+          "–" +
+          timestampLabel(c.endMs) +
+          "]: " +
+          c.text +
+          "\nSelected transcript excerpt; this is not full-video coverage. Transcript source: " +
+          page.video!.sourceUrl,
+        url: timestampUrl(c.videoId, c.startMs / 1000),
+        retrievedAt: page.retrievedAt,
+      }));
+    }
+
     const excerpts = this.find(page.id, query);
     const text = (excerpts.length ? excerpts.map((x) => x.text).join("\n") : page.text).slice(0, 1800);
     return [

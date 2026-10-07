@@ -11,6 +11,13 @@ export type BrowserPage = {
   mode: string;
   channel?: string;
   transcript?: string;
+  video?: {
+    language?: string;
+    provider?: string;
+    sourceUrl?: string;
+    capabilities: { metadata: string; transcript: string; visual: string; audioTranscription: string };
+    attempts: Array<{ provider: string; status: string; reason?: string }>;
+  };
   links: Array<{ title: string; url: string }>;
 };
 export type PageContext = { id: string; title: string; profileId: string };
@@ -34,6 +41,10 @@ export function BrowserPanel({
     [index, setIndex] = useState(-1),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
+  const [diagnostics, setDiagnostics] = useState<{
+    requests: number;
+    providers: Record<string, { status: string; at: string }>;
+  }>();
   const [pending, setPending] = useState<Record<string, unknown>>(),
     [results, setResults] = useState<Array<{ title: string; url: string; snippet: string }>>([]),
     [find, setFind] = useState(""),
@@ -142,6 +153,30 @@ export function BrowserPanel({
         </Button>
         {busy && <Button onClick={() => void core("ai.internet", { action: "cancel" })}>Stop</Button>}
       </div>
+      <details>
+        <summary>Connection details</summary>
+        <Button
+          onClick={() =>
+            void core<{ requests: number; providers: Record<string, { status: string; at: string }> }>("ai.internet", {
+              action: "status",
+            })
+              .then(setDiagnostics)
+              .catch((e) => setError(errorText(e)))
+          }
+        >
+          Refresh request counters
+        </Button>
+        {diagnostics && (
+          <>
+            <p>Public transport requests in this AI/project session: {diagnostics.requests}</p>
+            {Object.entries(diagnostics.providers).map(([host, health]) => (
+              <p key={host}>
+                {host}: {health.status}
+              </p>
+            ))}
+          </>
+        )}
+      </details>
       {busy && <p role="status">Reading public sources…</p>}
       {error && <p role="status">{error}</p>}
       {results.map((r) => (
@@ -162,7 +197,32 @@ export function BrowserPanel({
             {page.mode}
             {page.channel ? ` · ${page.channel}` : ""} · Retrieved {new Date(page.retrievedAt).toLocaleString()}
           </p>
-          {page.transcript && <p>Transcript: {page.transcript}. Visual video analysis is not available.</p>}
+          {page.transcript && (
+            <>
+              <p>
+                Source: {page.mode} · Transcript: {page.transcript}
+                {page.video?.language ? " · Language: " + page.video.language : ""}
+              </p>
+              {page.video?.provider && <p>Transcript provider: {page.video.provider}</p>}
+              {page.video?.sourceUrl && <a href={page.video.sourceUrl}>Published transcript source</a>}
+              <p>Visual video analysis and local audio transcription are unavailable in this build.</p>
+              {page.transcript === "unavailable" && (
+                <p>
+                  Only title/channel metadata is available. Try another publicly captioned video or reopen later; a full
+                  summary or timestamp cannot be inferred from metadata.
+                </p>
+              )}
+              <details>
+                <summary>Transcript availability details</summary>
+                {page.video?.attempts.map((a, i) => (
+                  <p key={i}>
+                    {a.provider}: {a.status}
+                    {a.reason ? " · " + a.reason : ""}
+                  </p>
+                ))}
+              </details>
+            </>
+          )}
           <div className="actions">
             <Button onClick={() => onAsk(page)}>Ask about this page</Button>
             <Button

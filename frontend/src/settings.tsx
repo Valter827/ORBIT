@@ -701,6 +701,20 @@ export function SettingsPanel({
                   <option value="wikipedia">Wikipedia · official public API</option>
                 </select>
               </label>
+              <label>
+                Optional search fallback
+                <select
+                  value={intelligence.searchFallback ?? "none"}
+                  disabled={busy || !profile || aiState?.localOnly}
+                  onChange={(e) =>
+                    saveIntelligence({ searchFallback: e.target.value as "none" | "bing" | "duckduckgo" })
+                  }
+                >
+                  <option value="none">None</option>
+                  <option value="bing">Bing RSS</option>
+                  <option value="duckduckgo">DuckDuckGo public search</option>
+                </select>
+              </label>
               <p>
                 Local Only disables all web research. Queries use only the current public question; private files,
                 memories and screen content are excluded.

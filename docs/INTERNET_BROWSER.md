@@ -1,6 +1,6 @@
-# Internet & Browser — ORBIT 0.9.3
+# Internet & Browser — ORBIT 0.9.4
 
-COSMO remains 1.0. Source baseline: the exact ORBIT-0.9.2-native-source-20261006.zip, SHA-256 EC1720E4A526CD56A743ADDCDBE428CFEA31B2AAEF098E171CD8067A73754E83. The user manually accepted native 0.9.2; this is not evidence for 0.9.3.
+COSMO remains 1.0. Source baseline: the exact ORBIT-0.9.3-internet-source-20261006.zip, SHA-256 5D9C0AF8A30DFEF7F425DA124A8A67A53ADFF58019D9E68928C2263E4F491BA5. Older native acceptance does not establish acceptance of 0.9.4.
 
 ## Privacy and settings
 
@@ -30,7 +30,7 @@ Examples:
 - «О чём это видео? https://www.youtube.com/watch?v=…» — metadata plus openly advertised captions when accessible.
 - «В какой момент автор говорит про установку?» — select the opened video's page context; available caption segments include timestamps and seek URLs.
 
-YouTube captions are obtained only when advertised by the public watch page and accessible through its public caption URL. No authentication, signature bypass, CAPTCHA bypass or paywall bypass exists. Missing/restricted captions produce Transcript unavailable and Metadata only, never a fabricated video summary. Video frame analysis and audio transcription: NOT IMPLEMENTED. Transcript parser tests alone do not establish live transcript acceptance.
+YouTube captions first use up to two validated tracks advertised by the public watch page. Empty/invalid tracks may fall back to the public, author-published 3b1b/captions GitHub archive for four supported 2017 neural-network videos. Every fallback validates the live video_url.txt identity before reading captions.srt. This archive is no longer the creator’s current contribution workflow and is not a universal YouTube transcript service. The Browser shows provider, language, source and failure information. No authentication, signature bypass, CAPTCHA bypass or paywall bypass exists. Missing/restricted captions produce Transcript unavailable and Metadata only, never a fabricated video summary. Video frame analysis and audio transcription: NOT IMPLEMENTED. Transcript parser tests alone do not establish live transcript acceptance.
 
 Research requests may inspect multiple public sources and one additional public query. Fast reads at most one result; Balanced three; Deep/research five. Video search reads metadata/captions for a bounded selected result. Identical URLs and page hashes are deduplicated. Sources retain titles, URLs, excerpts and timestamps and feed the existing evidence verifier. A search listing whose page cannot be read is labelled destination not verified.
 
@@ -45,3 +45,11 @@ Relevant provider documentation: [Nominatim usage policy](https://operations.osm
 ## Evidence
 
 Dedicated Internet tests cover policy, SSRF, unsafe links, prompt text isolation, bounded following/cache, cancellation, provider cooldown, structured search, transcript timestamps and privacy minimization. Real Internet and UI acceptance scripts produce controlled evidence under validation. Browser/core passes never imply native passes. Fresh Windows EXE, installer and portable are built from the recorded commit; no older executable is relabelled. Signing remains UNSIGNED without a trusted identity.
+
+## 0.9.4 boundaries
+
+SRT, WebVTT, JSON3 and XML captions retain source times; duplicate overlaps are normalized. Retrieval uses bounded timestamped chunks. A selected excerpt is not full-video coverage. Unsupported model summaries fall back to clearly labelled source quotations. Topic matching is lexical in the available transcript language; cross-language semantic timestamp search is not claimed. Opening a video URL from chat activates its visible page-context chip for follow-up questions; Remove page context, a new chat or scope changes clear it.
+
+Settings supports an optional Bing/DuckDuckGo search fallback, disabled by default; only one configured fallback attempt is allowed. Browser Connection details exposes bounded host health and request counters, without stored query strings. Research reports requested versus usable independent sources and labels insufficient comparisons partial; unread search listings do not count as usable sources. General cross-store pricing remains partial.
+
+Rendered-page fallback is NOT IMPLEMENTED: the static reader cannot safely execute arbitrary remote JavaScript with the current isolated transport. Local audio transcription and video frames are NOT IMPLEMENTED: this release has no permitted media acquisition/decoder pipeline. No media is downloaded, no anti-bot/auth controls are bypassed, and no visual claim is inferred from captions. These optional features are not prerequisites for the specified release gate.

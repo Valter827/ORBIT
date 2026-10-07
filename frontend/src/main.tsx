@@ -430,6 +430,7 @@ function App() {
                 <div hidden={mode !== "Chat"}>
                   <ChatPanel
                     pageContext={pageContext}
+                    onPageContext={setPageContext}
                     onClearPage={() => setPageContext(undefined)}
                     key={status?.workspace ?? ""}
                     ai={ai}

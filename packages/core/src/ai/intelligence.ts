@@ -7,6 +7,7 @@ export const IntelligenceSettings = z
   .object({
     web: z.enum(["off", "ask", "allow"]).default("ask"),
     searchProvider: z.enum(["none", "wikipedia", "bing", "duckduckgo"]).default("bing"),
+    searchFallback: z.enum(["none", "bing", "duckduckgo"]).default("none"),
     mode: z.enum(["fast", "balanced", "deep"]).default("balanced"),
     auto: z.boolean().default(false),
     local: z.boolean().default(true),

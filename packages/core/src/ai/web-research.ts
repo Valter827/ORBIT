@@ -91,7 +91,7 @@ export async function publicGet(
         headers: {
           accept: "text/html, application/json, text/plain",
           "accept-encoding": "identity",
-          "user-agent": "ORBIT/0.9.3 (+https://github.com/Valter827/ORBIT; user-requested public research)",
+          "user-agent": "ORBIT/0.9.4 (+https://github.com/Valter827/ORBIT; user-requested public research)",
         },
         lookup: (_name, options, callback) => {
           if (options.all) callback(null, [selected]);
@@ -114,7 +114,9 @@ export async function publicGet(
         const type = response.headers["content-type"] ?? "";
         if (
           response.statusCode !== 200 ||
-          !/text\/html|text\/plain|application\/json|(?:text|application)\/xml|application\/rss\+xml/i.test(type) ||
+          !/text\/html|text\/plain|text\/vtt|application\/x-subrip|application\/json|(?:text|application)\/xml|application\/rss\+xml/i.test(
+            type,
+          ) ||
           (response.headers["content-encoding"] && response.headers["content-encoding"] !== "identity")
         ) {
           response.destroy();

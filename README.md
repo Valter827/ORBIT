@@ -1,3 +1,11 @@
+# ORBIT 0.9.4 Internet Native Hardening + YouTube 2.0
+
+Continued from the exact 0.9.3 source ZIP. Public captions are normalized into timestamped excerpts, with a bounded author-published fallback for four 3Blue1Brown videos. Metadata, transcript and visual capabilities are distinct. Visual frames, local audio transcription and rendered pages are not implemented.
+
+[Internet guide](docs/INTERNET_BROWSER.md) · [Windows delivery](docs/WINDOWS_RELEASE.md). Native acceptance must be performed on the exact 0.9.4 EXE; core/browser checks cannot establish it. Older release sections below are historical.
+
+---
+
 # ORBIT 0.9.3 Internet & Browser
 
 COSMO 1.0. Public search, a bounded static Browser reader, Steam/Places/YouTube providers and explicit page context. No Voice or Pilot.

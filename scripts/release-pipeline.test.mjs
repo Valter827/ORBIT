@@ -10,12 +10,12 @@ test("packaging rejects changed artifacts and missing runtime, never emits a rel
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "orbit-packaging-unit-"));
   try {
     const exe = "src-tauri/target/release/ORBIT.exe.nsis";
-    const setup = "src-tauri/target/release/bundle/nsis/ORBIT_0.9.3_x64-setup.exe";
+    const setup = "src-tauri/target/release/bundle/nsis/ORBIT_0.9.4_x64-setup.exe";
     for (const file of [exe, setup]) {
       fs.mkdirSync(path.dirname(path.join(root, file)), { recursive: true });
       fs.writeFileSync(path.join(root, file), "MZsynthetic-unit-test-not-a-release");
     }
-    const receipt = { version: "0.9.3", artifacts: [exe, setup].map(file => ({ path: file, ...digest(path.join(root, file)) })) };
+    const receipt = { version: "0.9.4", artifacts: [exe, setup].map(file => ({ path: file, ...digest(path.join(root, file)) })) };
     fs.appendFileSync(path.join(root, exe), "changed");
     assert.throws(() => verifyReceipt(root, receipt), /changed/);
     await assert.rejects(collectRelease(root, receipt), /changed/);

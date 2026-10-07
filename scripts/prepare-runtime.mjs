@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import os from "node:os";
 import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
 const version = "24.18.0",
@@ -33,7 +34,9 @@ try {
 }
 if (createHash("sha256").update(bytes).digest("hex") !== expected) throw new Error("Node runtime SHA256 mismatch");
 await fs.writeFile(zip, bytes);
-const extraction = path.join(cache, "runtime");
+// Windows PowerShell archive extraction fails on deeply nested workspace paths.
+// Use a fresh short temporary directory; the official ZIP hash was checked above.
+const extraction = await fs.mkdtemp(path.join(os.tmpdir(), "orbit-runtime-"));
 const quote = (s) => "'" + s.replaceAll("'", "''") + "'";
 const result = spawnSync(
   "powershell.exe",
@@ -41,7 +44,7 @@ const result = spawnSync(
     "-NoProfile",
     "-NonInteractive",
     "-Command",
-    "Expand-Archive -LiteralPath " + quote(zip) + " -DestinationPath " + quote(extraction) + " -Force",
+    "$ErrorActionPreference='Stop'; Expand-Archive -LiteralPath " + quote(zip) + " -DestinationPath " + quote(extraction) + " -Force",
   ],
   { stdio: "inherit", windowsHide: true },
 );

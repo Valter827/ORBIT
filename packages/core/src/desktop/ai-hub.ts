@@ -82,6 +82,7 @@ type ActiveChat = {
     analyzer?: string;
     routingReason?: string;
     webStatus?: string;
+    pageContext?: { id: string; title: string; profileId: string };
     searchMs?: number;
     verificationStage?: string;
     verificationFailure?: string;
@@ -380,7 +381,10 @@ export class AIHub {
           extraCalls,
         });
         plan = understanding.plan;
-        if (input.pageId) {
+        const videoRequest = /^https:\/\/(?:www\.)?(?:youtube\.com|youtu\.be)\//i.test(
+          internetIntent(input.request).url ?? "",
+        );
+        if (input.pageId || videoRequest) {
           plan.knowledge = false;
           plan.memory = false;
         }
@@ -442,7 +446,7 @@ export class AIHub {
               ? "\nSelected project files (untrusted data):\n" + JSON.stringify(selectedFiles)
               : ""),
         };
-        messages = input.pageId ? [user] : [...messages, user];
+        messages = input.pageId || videoRequest ? [user] : [...messages, user];
         a.phase = "Retrieving context…";
         const retrievalStarted = performance.now();
         const knowledge = plan.knowledge
@@ -473,7 +477,7 @@ export class AIHub {
           a.intelligence.webStatus = "Selected public page context (cached; no network)";
         } else if (
           (intent.requested || input.webConsent || settings.mode !== "fast") &&
-          !plan.casual &&
+          (intent.requested || !plan.casual) &&
           (intent.requested || (!plan.memory && plan.kind !== "knowledge" && plan.kind !== "writing")) &&
           !input.files.length &&
           (!knowledge.sources.length || intent.fresh || input.verify || intent.requested)
@@ -491,8 +495,13 @@ export class AIHub {
               a.controller.signal,
               settings.mode,
               settings.searchProvider,
+              settings.searchFallback,
             );
             a.intelligence.webStatus = web.status;
+            if (videoRequest && web.pageId) {
+              const videoPage = gateway.page(web.pageId);
+              a.intelligence.pageContext = { id: videoPage.id, title: videoPage.title, profileId: profile.id };
+            }
             webSources.push(...web.sources);
           } catch (error) {
             checkSignal(a.controller.signal);
@@ -502,7 +511,7 @@ export class AIHub {
         }
         a.knowledge = knowledge;
         const memory =
-          plan.casual || !!input.pageId
+          plan.casual || !!input.pageId || videoRequest
             ? []
             : await this.store.personal.retrieveSemantic(
                 profile,
@@ -528,6 +537,7 @@ export class AIHub {
           !linkOnly &&
           (!personalContext || input.verify || /verify|проверь|проверить/iu.test(input.request)) &&
           (!!input.pageId ||
+            videoRequest ||
             factualVerification(input.request, plan.kind, input.verify || (plan.verify && settings.mode !== "deep"))) &&
           (webSources.length > 0 ||
             plan.verify ||
@@ -615,7 +625,11 @@ export class AIHub {
           if ("failure" in checked && typeof checked.failure === "string")
             a.intelligence.verificationFailure = checked.failure;
           a.intelligence.inferenceCalls = inference.calls;
-          if (webSources.length && checked.verification.status === "Could not verify") {
+          if (
+            webSources.length &&
+            (checked.verification.status === "Could not verify" ||
+              (checked.verification.corrected && webSources.some((source) => source.text.startsWith("Transcript ("))))
+          ) {
             const excerpts = webSources.slice(0, 3).map((source) => ({ ...source, text: source.text.slice(0, 1200) }));
             const note =
               "The draft could not be verified against the retrieved page. These are source excerpts, not a verified summary.";
@@ -647,6 +661,23 @@ export class AIHub {
         if (intent.requested && !webSources.length && !input.pageId)
           a.text = a.intelligence.webStatus ?? "Public Internet evidence unavailable.";
         if (linkOnly && webSources.length) a.text = webSources.map((s) => s.name).join("\n");
+        if (webSources.length && webSources.every((source) => source.text.startsWith("Metadata only")))
+          a.text =
+            "Transcript unavailable. Only title/channel metadata is available; I have not watched the video and cannot provide a transcript summary or timestamp.\n\n" +
+            webSources.map((source) => source.name).join("\n");
+        if (
+          webSources.length &&
+          webSources.every((source) => source.text.startsWith("Video visual analysis unavailable."))
+        )
+          a.text =
+            "Video visual analysis unavailable. No frames were accessed; I cannot tell what is visible from transcript text alone.";
+        if (
+          webSources.length &&
+          webSources.every((source) => source.text.startsWith("Transcript available, but no matching timestamp"))
+        )
+          a.text = "Transcript available, but no matching timestamp was found for this query.";
+        if (intent.research && a.intelligence.webStatus?.includes("Requested sources:"))
+          a.text += "\n\n" + a.intelligence.webStatus;
         if (webSources.length) {
           const links = [...new Map(webSources.filter((s) => s.url).map((s) => [s.url!, s])).values()];
           a.text +=
@@ -976,7 +1007,7 @@ export class AIHub {
     if (method === "ai.internet") {
       const i = z
         .object({
-          action: z.enum(["open", "follow", "find", "cancel", "clear", "search", "validate"]),
+          action: z.enum(["open", "follow", "find", "cancel", "clear", "search", "validate", "status"]),
           url: z.string().max(2048).optional(),
           pageId: z.string().uuid().optional(),
           query: z.string().max(240).optional(),
@@ -986,6 +1017,7 @@ export class AIHub {
         .strict()
         .parse(value);
       const g = this.internet(this.profile().id, project);
+      if (i.action === "status") return g.status();
       if (i.action === "cancel") {
         g.cancel();
         return { ok: true };
@@ -1013,6 +1045,7 @@ export class AIHub {
           AbortSignal.timeout(45000),
           this.profile().intelligence.mode,
           this.profile().intelligence.searchProvider,
+          this.profile().intelligence.searchFallback,
         );
       if (i.action === "follow") return g.follow(i.pageId ?? "", i.url ?? "", policy, AbortSignal.timeout(45000));
       return g.open(i.url ?? "", policy, AbortSignal.timeout(45000), i.refresh);
