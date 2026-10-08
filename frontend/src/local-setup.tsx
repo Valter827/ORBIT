@@ -237,9 +237,9 @@ export function LocalSetup({
           </label>
           {chosen && (
             <p>
-              Chat ✓ · Streaming {chosen.capabilities?.streaming ? "✓" : "Unknown"} · Agent{" "}
-              {chosen.supportsTools ? "✓" : "Unavailable"} · Sense Text ✓ · Vision{" "}
-              {chosen.capabilities?.vision === true ? "✓" : "Unavailable / unknown"}
+              Chat supported · Streaming {chosen.capabilities?.streaming ? "Supported" : "Unknown"} · Agent{" "}
+              {chosen.supportsTools ? "Supported" : "Unavailable"} · Sense Text supported · Vision{" "}
+              {chosen.capabilities?.vision === true ? "Supported" : "Unavailable / unknown"}
             </p>
           )}
           <label className="check">

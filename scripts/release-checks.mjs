@@ -5,7 +5,7 @@ fs.mkdirSync("validation", { recursive: true });
 const checks = {};
 const npm = process.env.npm_execpath;
 if (!npm) throw new Error("Run through npm run check:release");
-for (const name of ["typecheck", "lint", "format:check", "test", "test:release", "frontend:build"]) {
+for (const name of ["typecheck", "lint", "format:check", "test", "test:release", "test:visual-security", "frontend:build"]) {
   const started = new Date().toISOString();
   const result = spawnSync(process.execPath, [npm, "run", name], { encoding: "utf8", windowsHide: true, maxBuffer: 32 * 1024 * 1024 });
   const log = (result.stdout || "") + (result.stderr || "");

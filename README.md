@@ -1,3 +1,9 @@
+# ORBIT 0.9.5 Visual System 2.0
+
+A substantial chat-first visual upgrade: unified Lucide icons, a new ORBIT app icon, redesigned sidebar and composer, readable Markdown/code/tables/math, source cards, and coherent workspace/settings surfaces. Existing core and security boundaries are preserved.
+
+[Visual system](docs/VISUAL_SYSTEM_2.md) · [Windows delivery](docs/WINDOWS_RELEASE.md). Native acceptance must use the exact 0.9.5 EXE; browser screenshots do not establish it. The historical release notes follow.
+
 # ORBIT 0.9.4 Internet Native Hardening + YouTube 2.0
 
 Continued from the exact 0.9.3 source ZIP. Public captions are normalized into timestamped excerpts, with a bounded author-published fallback for four 3Blue1Brown videos. Metadata, transcript and visual capabilities are distinct. Visual frames, local audio transcription and rendered pages are not implemented.

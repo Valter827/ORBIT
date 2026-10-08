@@ -1,7 +1,7 @@
 import { SpaceManager, type Space } from "./knowledge-spaces";
 import { useState, useEffect } from "react";
 import { core, native, errorText } from "./api";
-import { Button, Modal, EmptyState, LoadingState } from "./components";
+import { Button, Modal, EmptyState, LoadingState, Icon } from "./components";
 type Source = {
   id: string;
   name: string;
@@ -125,7 +125,13 @@ export function KnowledgePanel({
   };
   return (
     <section className="knowledge-panel">
-      <h2>Knowledge</h2>
+      <div className="knowledge-heading">
+        <Icon name="book" size={24} />
+        <div>
+          <span className="eyebrow">YOUR SOURCES</span>
+          <h2>Knowledge</h2>
+        </div>
+      </div>
       <SpaceManager
         profileId={profileId}
         spaces={spaces}
@@ -217,27 +223,30 @@ export function KnowledgePanel({
           Save knowledge note
         </Button>
       </details>
-      <div className="builder-grid">
-        <label>
-          Space
-          <select value={filterSpace} onChange={(e) => setFilterSpace(e.target.value)}>
-            <option value="">All accessible spaces</option>
-            {spaces.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          File type
-          <input placeholder="md, ts, pdf…" value={filterType} onChange={(e) => setFilterType(e.target.value)} />
-        </label>
-        <label>
-          Indexed since
-          <input type="date" value={since} onChange={(e) => setSince(e.target.value)} />
-        </label>
-      </div>
+      <details className="knowledge-filters">
+        <summary>Filter sources</summary>
+        <div className="builder-grid">
+          <label>
+            Space
+            <select value={filterSpace} onChange={(e) => setFilterSpace(e.target.value)}>
+              <option value="">All accessible spaces</option>
+              {spaces.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            File type
+            <input placeholder="md, ts, pdf…" value={filterType} onChange={(e) => setFilterType(e.target.value)} />
+          </label>
+          <label>
+            Indexed since
+            <input type="date" value={since} onChange={(e) => setSince(e.target.value)} />
+          </label>
+        </div>
+      </details>
       <label>
         Search knowledge
         <input value={query} onChange={(e) => setQuery(e.target.value)} />
@@ -297,7 +306,10 @@ export function KnowledgePanel({
           )
           .map((s) => (
             <article className="card" key={s.id}>
-              <strong>{s.name}</strong>
+              <strong className="knowledge-source-name">
+                <Icon name="file" size={18} />
+                {s.name}
+              </strong>
               <p className="muted">
                 {s.kind} · {s.bytes.toLocaleString()} bytes · {s.chunkCount} passages · {s.status} ·{" "}
                 {new Date(s.updated).toLocaleString()}

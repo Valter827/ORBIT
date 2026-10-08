@@ -93,7 +93,7 @@ try{
  await page.getByLabel("Current AI",{exact:true}).waitFor();
  await wait(()=>page.locator("#chat-request").evaluate(el=>document.activeElement===el));
  assert.equal(await page.locator(".chat-toolbar,.chat-identity").count(),0);
- assert.equal(await page.getByRole("button",{name:"+ New chat",exact:true}).count(),1);
+ assert.equal(await page.getByRole("button",{name:"New chat",exact:true}).count(),1);
  async function snapshots(kind) {
   for(const [width,height] of [[1100,700],[1366,768],[1440,900],[1920,1080]]) {
    await page.setViewportSize({width,height});
@@ -178,7 +178,7 @@ try{
  await record("webConsentCitation",{status:"PASS",queryConsent:true,verification:web.intelligence.verification.status,source: citation.url,realResponse:web.text});
 
  await sourceDialog.getByRole("button",{name:"Close",exact:true}).click();
- await page.getByRole("button",{name:"+ New chat",exact:true}).click();
+ await page.getByRole("button",{name:"New chat",exact:true}).click();
  let memoryOld=(await call("chat.status"))?.id;
  await page.locator("#chat-request").fill("Запомни, что для новых веб-проектов я предпочитаю TypeScript.");await page.keyboard.press("Enter");
  const memoryAnswer=await wait(async()=>{const g=await call("chat.status");return g&&g.id!==memoryOld&&!g.running?g:null;});assert.equal(memoryAnswer.error,undefined);

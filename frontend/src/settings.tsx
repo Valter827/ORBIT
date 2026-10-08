@@ -9,7 +9,7 @@ import { PrivacyPanel } from "./privacy";
 import { ProvidersPanel } from "./providers";
 import { useState } from "react";
 import { native, core, errorText, type Desktop } from "./api";
-import { Logo, Button } from "./components";
+import { Logo, Button, Icon } from "./components";
 export function SettingsPanel({
   desktop,
   aiState,
@@ -32,6 +32,7 @@ export function SettingsPanel({
   done?: () => void;
 }) {
   const [appearance, setAppearance] = useState({
+    theme: readPreference("theme", "dark"),
     accent: readPreference("accent", "violet"),
     density: readPreference("density", "comfortable"),
     animations: readPreference("animations", "on"),
@@ -100,7 +101,7 @@ export function SettingsPanel({
       <h3>Anthropic</h3>
       <p className="muted">
         {connected
-          ? "✓ Connected"
+          ? "Connected"
           : desktop.hasKey
             ? "API key stored securely · connection not tested this session"
             : "AI provider not configured."}
@@ -137,7 +138,7 @@ export function SettingsPanel({
               await save();
               await core("testConnection");
               setConnected(true);
-              setMessage("✓ Connected");
+              setMessage("Connected");
             })
           }
         >
@@ -286,6 +287,7 @@ export function SettingsPanel({
     "Appearance",
     "AI & Models",
     "Local AI",
+    "Internet & Browser",
     "Sense",
     "Agent & Permissions",
     "Knowledge & Memory",
@@ -301,6 +303,26 @@ export function SettingsPanel({
         <nav className="settings-nav" aria-label="Settings sections">
           {sections.map((name) => (
             <button key={name} aria-current={section === name ? "page" : undefined} onClick={() => setSection(name)}>
+              <Icon
+                name={
+                  (
+                    {
+                      General: "settings",
+                      Appearance: "appearance",
+                      "AI & Models": "star",
+                      "Local AI": "local",
+                      Sense: "sense",
+                      "Internet & Browser": "browser",
+                      "Agent & Permissions": "verified",
+                      "Knowledge & Memory": "book",
+                      Shortcuts: "shortcuts",
+                      "Privacy & Data": "privacy",
+                      Advanced: "advanced",
+                      About: "info",
+                    } as Record<string, string>
+                  )[name]
+                }
+              />
               {name}
             </button>
           ))}
@@ -363,7 +385,23 @@ export function SettingsPanel({
           )}
           {section === "Appearance" && (
             <>
-              <p>Theme: ORBIT Dark</p>
+              <div className="appearance-preview">
+                <Logo />
+                <strong>Your space. Your style.</strong>
+                <span>ORBIT Visual System 2.0</span>
+              </div>
+              <label>
+                Theme
+                <select
+                  aria-label="Theme"
+                  value={appearance.theme}
+                  onChange={(e) => preference("theme", e.target.value)}
+                >
+                  <option value="system">System</option>
+                  <option value="dark">Dark</option>
+                  <option value="light">Light</option>
+                </select>
+              </label>
               <label>
                 Accent
                 <select value={appearance.accent} onChange={(e) => preference("accent", e.target.value)}>
@@ -390,6 +428,25 @@ export function SettingsPanel({
               <p className="muted">
                 Reduced motion in Windows is always respected. Sidebar size is remembered automatically.
               </p>
+            </>
+          )}
+          {section === "Internet & Browser" && (
+            <>
+              <p className="muted">Public sources, with your permission. Local Only overrides these preferences.</p>
+              <label>
+                Internet Access
+                <select
+                  value={intelligence.web}
+                  disabled={busy || !profile || aiState?.localOnly}
+                  onChange={(e) => saveIntelligence({ web: e.target.value as Intelligence["web"] })}
+                >
+                  <option value="off">Off</option>
+                  <option value="ask">Ask</option>
+                  <option value="allow">Allow public research</option>
+                </select>
+              </label>
+              <InternetPreferences />
+              <Button onClick={() => setSection("Privacy & Data")}>Privacy and Local Only</Button>
             </>
           )}
           {section === "AI & Models" && (

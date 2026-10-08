@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { core, errorText, native } from "./api";
-import { Button, Modal } from "./components";
+import { Button, Modal, Icon } from "./components";
 import type { AIState } from "./ai-types";
 export type BrowserPage = {
   id: string;
@@ -106,7 +106,15 @@ export function BrowserPanel({
   );
   return (
     <section className="browser-panel">
-      <h1>Browser</h1>
+      <div className="page-heading">
+        <span className="page-symbol">
+          <Icon name="browser" size={24} />
+        </span>
+        <div>
+          <span className="eyebrow">EXPLORE WITH CONTEXT</span>
+          <h1>Browser</h1>
+        </div>
+      </div>
       <p>Public reader · no scripts, cookies, login or form submission</p>
       <form
         onSubmit={(e) => {
@@ -126,7 +134,7 @@ export function BrowserPanel({
           />
         </label>
         <button disabled={busy || !address.trim()} type="submit">
-          Open / Search
+          <Icon name="search" size={16} /> Open / Search
         </button>
       </form>
       <div className="actions">
@@ -137,6 +145,7 @@ export function BrowserPanel({
             void run({ action: "open", url: target, historyIndex: index - 1 });
           }}
         >
+          <Icon name="back" size={16} />
           Back
         </Button>
         <Button
@@ -146,9 +155,11 @@ export function BrowserPanel({
             void run({ action: "open", url: target, historyIndex: index + 1 });
           }}
         >
+          <Icon name="forward" size={16} />
           Forward
         </Button>
         <Button disabled={busy || !page} onClick={() => void run({ action: "open", url: page?.url, refresh: true })}>
+          <Icon name="refresh" size={16} />
           Refresh
         </Button>
         {busy && <Button onClick={() => void core("ai.internet", { action: "cancel" })}>Stop</Button>}
@@ -224,10 +235,14 @@ export function BrowserPanel({
             </>
           )}
           <div className="actions">
-            <Button onClick={() => onAsk(page)}>Ask about this page</Button>
+            <Button onClick={() => onAsk(page)}>
+              <Icon name="chat" size={16} />
+              Ask about this page
+            </Button>
             <Button
               onClick={() => void native("open_public_url", { url: page.url }).catch((e) => setError(errorText(e)))}
             >
+              <Icon name="external" size={16} />
               Open in system browser
             </Button>
           </div>

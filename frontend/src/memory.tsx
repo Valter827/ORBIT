@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { core, errorText } from "./api";
 import type { AIState } from "./ai-types";
-import { Button, Modal, ErrorNotice, LoadingState } from "./components";
+import { Button, Modal, ErrorNotice, LoadingState, Icon } from "./components";
 const types = ["preference", "project", "decision", "goal", "task", "fact"] as const;
 type MemoryType = (typeof types)[number];
 type Candidate = {
@@ -309,8 +309,13 @@ export function MemoryPanel() {
             new Date(visible[index - 1].updated).toDateString() !== new Date(row.updated).toDateString()) && (
             <h2>{new Date(row.updated).toLocaleDateString()}</h2>
           )}
-          <article className="card">
-            <p>{row.content}</p>
+          <article className="card memory-entry">
+            <div className="memory-entry-type">
+              <Icon name={row.type === "project" ? "folder" : row.type === "task" ? "check" : "memory"} size={16} />
+              <span>{row.type}</span>
+              <span className="pill">{row.status}</span>
+            </div>
+            <p className="memory-entry-content">{row.content}</p>
             <p className="muted">
               {row.type} · {row.scope === "user" ? "AI" : row.scope} {row.project.split(/[\\/]/).pop()} ·{" "}
               {row.owner === "shared" ? "Shared with: " + identity.shared.join(", ") : "Private"} · {row.status} ·{" "}

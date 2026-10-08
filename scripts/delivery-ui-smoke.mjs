@@ -136,7 +136,7 @@ try {
   await page.goto("http://127.0.0.1:" + server.address().port);
   await page.locator("#chat-request").waitFor();
   await page.waitForFunction(() => document.activeElement?.id === "chat-request");
-  assert.equal(await page.getByRole("button", {name:"+ New chat",exact:true}).count(), 1);
+  assert.equal(await page.getByRole("button", {name:"New chat",exact:true}).count(), 1);
   await capture("delivery-chat-first");
   await page.keyboard.type("Controlled delivery smoke");
   await page.keyboard.press("Enter");

@@ -36,8 +36,18 @@ export type Status = {
 };
 export type Task = { id: string; workspace: string; request: string; status: string; updated: number };
 export const native = invoke;
-export const core = <T = unknown>(method: string, params: unknown = {}): Promise<T> =>
-  invoke("core_command", { method, params });
+export const core = async <T = unknown>(method: string, params: unknown = {}): Promise<T> => {
+  const result = await invoke<T>("core_command", { method, params });
+  const message: Record<string, string> = {
+    "ai.saveProfile": "Saved",
+    "ai.memoryAdd": "Memory saved",
+    "ai.knowledgeNote": "Added to Knowledge",
+    "ai.localOnly": "Privacy preference updated",
+    "ai.knowledgeSpaceAccess": "Access updated",
+  };
+  if (message[method]) dispatchEvent(new CustomEvent("orbit-notice", { detail: message[method] }));
+  return result;
+};
 export const errorText = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
 export const displayValue = (value: unknown): string =>

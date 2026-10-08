@@ -44,7 +44,7 @@ async function startCore(){
  await call("configure",JSON.parse(await fs.readFile(path.join(base,"provider-settings.json"),"utf8")));
 }
 async function stopCore(){if(!child||child.exitCode!==null)return;await call("shutdown").catch(()=>{});child.stdin.end();await new Promise(r=>child.once("exit",r));}
-const desktop={settings:{projects:[],workspace:null,model:"",verificationCommand:"npm test",filesEnabled:true,terminalEnabled:false,closeBehavior:"exit",notifications:false,shortcut:"Ctrl+Space",paletteShortcut:"Ctrl+K",settingsShortcut:"Ctrl+,",newTaskShortcut:"Ctrl+N",onboarding:true,trayExplained:true},projects:[],hasKey:false,version:"0.9.4",warning:"",autostart:false};
+const desktop={settings:{projects:[],workspace:null,model:"",verificationCommand:"npm test",filesEnabled:true,terminalEnabled:false,closeBehavior:"exit",notifications:false,shortcut:"Ctrl+Space",paletteShortcut:"Ctrl+K",settingsShortcut:"Ctrl+,",newTaskShortcut:"Ctrl+N",onboarding:true,trayExplained:true},projects:[],hasKey:false,version:"0.9.5",warning:"",autostart:false};
 async function senseCommand(action,params){
  if(action==="stop"){const old=epoch++;scopeSession=undefined;snapshot=undefined;await call("sense.cancel",{epoch:old});return {};}
  if(action==="windows"){const all=await nativeHelper({action:"windows"});return {...all,windows:all.windows.filter(w=>w.processId===windowProcess?.pid),displays:[]};}
@@ -67,7 +67,7 @@ try{
  const tested=await call("ai.brainTest",{profileId:cosmo.id});assert.ok(tested.text?.trim());await record("inference",{status:"PASS",text:tested.text});
  server=createServer((req,res)=>{void(async()=>{const file=path.resolve(root,"frontend-dist","."+((req.url??"/").split("?")[0]==="/" ? "/index.html":(req.url??"/").split("?")[0]));assert.ok(file.startsWith(path.join(root,"frontend-dist")+path.sep));const bytes=await fs.readFile(file);res.setHeader("content-type",file.endsWith(".js")?"text/javascript":file.endsWith(".css")?"text/css":"text/html");res.end(bytes);})().catch(()=>{res.statusCode=404;res.end();});});
  await new Promise(r=>server.listen(0,"127.0.0.1",r));
- browser=await chromium.launch({headless:false,executablePath:"C:/Program Files/Google/Chrome/Application/chrome.exe"});
+ browser=await chromium.launch({headless:true,executablePath:"C:/Program Files/Google/Chrome/Application/chrome.exe"});
  page=await browser.newPage({viewport:{width:1440,height:900}});page.setDefaultTimeout(30000);
  await page.exposeFunction("orbitRealInvoke",async(cmd,args={})=>{
   if(cmd.startsWith("plugin:event|"))return 1;

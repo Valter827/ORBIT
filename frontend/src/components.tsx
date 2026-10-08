@@ -1,20 +1,65 @@
+import {
+  MessageSquare,
+  Folder,
+  FileText,
+  Brain,
+  Sparkles,
+  BookOpen,
+  Code,
+  Orbit,
+  Cloud,
+  Monitor,
+  Globe,
+  Settings,
+  Search,
+  Plus,
+  ArrowUp,
+  Square,
+  Copy,
+  Check,
+  RotateCcw,
+  Pencil,
+  Trash2,
+  Pin,
+  Upload,
+  Download,
+  ExternalLink,
+  ArrowLeft,
+  ArrowRight,
+  RefreshCw,
+  X,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Ellipsis,
+  ShieldCheck,
+  AlertTriangle,
+  CircleAlert,
+  WifiOff,
+  LoaderCircle,
+  Link,
+  Eye,
+  Paperclip,
+  Zap,
+  Layers,
+  ChevronDown,
+  MapPin,
+  Play,
+  Gamepad2,
+  Palette,
+  Keyboard,
+  Lock,
+  Info,
+  SlidersHorizontal,
+} from "lucide-react";
 import React, { useState, useEffect, useRef } from "react";
 import { native, core, errorText, displayValue, type Event, type Pending } from "./api";
 export function Logo() {
   return (
-    <svg width="32" height="32" viewBox="0 0 64 64" aria-hidden="true">
-      <ellipse
-        cx="32"
-        cy="32"
-        rx="27"
-        ry="12"
-        fill="none"
-        stroke="#729aff"
-        strokeWidth="3"
-        transform="rotate(-34 32 32)"
-      />
-      <circle cx="32" cy="32" r="6" fill="#dce6ff" />
-      <circle cx="54" cy="19" r="4" fill="#9b7dff" />
+    <svg className="orbit-mark" width="34" height="34" viewBox="0 0 64 64" aria-hidden="true">
+      <rect x="3" y="3" width="58" height="58" rx="19" fill="var(--accent-muted)" />
+      <circle cx="32" cy="32" r="17" fill="none" stroke="var(--accent)" strokeWidth="4" />
+      <path d="M13 41C5 28 40 9 51 22C59 36 24 55 13 41Z" fill="none" stroke="var(--text-primary)" strokeWidth="3" />
+      <circle cx="48" cy="22" r="5" fill="var(--accent)" />
     </svg>
   );
 }
@@ -293,7 +338,7 @@ export function Files() {
                       .catch((e) => setError(errorText(e)))
               }
             >
-              {entry.directory ? "▸" : "·"} {entry.name}
+              <Icon name={entry.directory ? "folder" : "file"} size={16} /> {entry.name}
             </button>
           ))}
         </div>
@@ -303,33 +348,115 @@ export function Files() {
   );
 }
 
-export function Icon({ name, size = 24 }: { name: string; size?: number }) {
-  const paths: Record<string, string> = {
-    chat: "M4 4h16v12H9l-5 4V4Z",
-    folder: "M3 6h7l2 2h9v12H3V6Z",
-    file: "M6 3h8l4 4v14H6V3Zm8 0v5h4M9 12h6M9 16h6",
-    memory: "M12 3a9 9 0 1 1-9 9M3 3v6h6M12 7v5l3 2",
-    star: "m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9Z",
-    book: "M3 4h6a3 3 0 0 1 3 3v14a4 4 0 0 0-4-2H3V4Zm18 0h-6a3 3 0 0 0-3 3v14a4 4 0 0 1 4-2h5V4Z",
-    code: "m8 5-7 7 7 7m8-14 7 7-7 7m-3-17-2 20",
-    orbit: "M20 4C8-1-4 18 5 20S28 5 20 4ZM12 10v4m-2-2h4",
-    cloud: "M6 19a5 5 0 0 1-1-10 7 7 0 0 1 13-2 6 6 0 0 1 0 12H6Z",
-    local: "M3 3h18v14H3V3Zm9 14v4m-5 0h10",
-  };
+const iconFamily = {
+  chat: MessageSquare,
+  folder: Folder,
+  file: FileText,
+  memory: Brain,
+  star: Sparkles,
+  book: BookOpen,
+  code: Code,
+  orbit: Orbit,
+  cloud: Cloud,
+  local: Monitor,
+  browser: Globe,
+  settings: Settings,
+  search: Search,
+  add: Plus,
+  send: ArrowUp,
+  stop: Square,
+  copy: Copy,
+  check: Check,
+  retry: RotateCcw,
+  edit: Pencil,
+  delete: Trash2,
+  pin: Pin,
+  upload: Upload,
+  download: Download,
+  external: ExternalLink,
+  back: ArrowLeft,
+  forward: ArrowRight,
+  refresh: RefreshCw,
+  close: X,
+  collapse: PanelLeftClose,
+  expand: PanelLeftOpen,
+  menu: Ellipsis,
+  verified: ShieldCheck,
+  warning: AlertTriangle,
+  error: CircleAlert,
+  offline: WifiOff,
+  loading: LoaderCircle,
+  link: Link,
+  sense: Eye,
+  attach: Paperclip,
+  fast: Zap,
+  balanced: Layers,
+  deep: Brain,
+  chevron: ChevronDown,
+  place: MapPin,
+  video: Play,
+  steam: Gamepad2,
+  appearance: Palette,
+  shortcuts: Keyboard,
+  privacy: Lock,
+  info: Info,
+  advanced: SlidersHorizontal,
+};
+export function Icon({ name, size = 18 }: { name: string; size?: number }) {
+  const Glyph = iconFamily[name as keyof typeof iconFamily] ?? Orbit;
+  return <Glyph className="orbit-icon" size={size} strokeWidth={1.75} aria-hidden="true" focusable="false" />;
+}
+export function IconButton({
+  name,
+  label,
+  onClick,
+  disabled = false,
+}: {
+  name: string;
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+}) {
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
+    <button
+      type="button"
+      className="icon-button"
+      aria-label={label}
+      title={label}
+      onClick={onClick}
+      disabled={disabled}
     >
-      <path d={paths[name] ?? paths.orbit} />
-    </svg>
+      <Icon name={name} />
+    </button>
+  );
+}
+export function CopyButton({ text, label = "Copy" }: { text: string; label?: string }) {
+  const [copied, setCopied] = useState(false);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    if (!copied && !failed) return;
+    const timer = setTimeout(() => {
+      setCopied(false);
+      setFailed(false);
+    }, 1800);
+    return () => clearTimeout(timer);
+  }, [copied, failed]);
+  return (
+    <button
+      type="button"
+      className="copy-button"
+      title={label}
+      aria-label={label}
+      onClick={() =>
+        void navigator.clipboard
+          .writeText(text)
+          .then(() => setCopied(true))
+          .catch(() => setFailed(true))
+      }
+    >
+      <Icon name={copied ? "check" : "copy"} size={14} />
+      <span role="status">{failed ? "Copy unavailable" : copied ? "Copied" : label}</span>
+    </button>
   );
 }
 export function EmptyState({ title, children }: { title: string; children: React.ReactNode }) {
@@ -417,6 +544,30 @@ export function DiffView({ diff }: { diff: string }) {
           ))}
         </code>
       </pre>
+    </div>
+  );
+}
+
+export function ToastRegion() {
+  const [message, setMessage] = useState("");
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout>;
+    const show = (event: globalThis.Event) => {
+      const value = (event as CustomEvent<unknown>).detail;
+      if (typeof value !== "string") return;
+      setMessage(value);
+      clearTimeout(timer);
+      timer = setTimeout(() => setMessage(""), 2600);
+    };
+    addEventListener("orbit-notice", show);
+    return () => {
+      removeEventListener("orbit-notice", show);
+      clearTimeout(timer);
+    };
+  }, []);
+  return (
+    <div className={message ? "toast" : "sr-only"} role="status" aria-live="polite">
+      {message && <Icon name="check" size={16} />} {message}
     </div>
   );
 }

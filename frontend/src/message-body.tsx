@@ -1,32 +1,23 @@
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Children, isValidElement, type ReactNode } from "react";
-import { useState } from "react";
+import { CopyButton } from "./components";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
+import "katex/dist/katex.min.css";
 function CodeBlock({ language, code }: { language: string; code: string }) {
-  const [status, setStatus] = useState("");
   return (
     <figure className="message-code">
       <figcaption>
         <span>{language || "Code"}</span>
-        <button
-          type="button"
-          onClick={() =>
-            void navigator.clipboard
-              .writeText(code)
-              .then(() => setStatus("Copied"))
-              .catch(() => setStatus("Copy unavailable"))
-          }
-        >
-          {status || "Copy code"}
-        </button>
+        <CopyButton text={code} label="Copy code" />
       </figcaption>
-      <pre>
+      <pre tabIndex={0} aria-label={language ? language + " code" : "Code"}>
         <code>{code}</code>
       </pre>
     </figure>
   );
 }
-
 function textContent(children: ReactNode): string {
   return Children.toArray(children)
     .map((child) =>
@@ -42,7 +33,20 @@ export function MessageBody({ text }: { text: string }) {
   return (
     <div className="message-body">
       <Markdown
-        remarkPlugins={[remarkGfm]}
+        remarkPlugins={[remarkGfm, remarkMath]}
+        rehypePlugins={[
+          [
+            rehypeKatex,
+            {
+              trust: false,
+              strict: "error",
+              throwOnError: false,
+              maxExpand: 100,
+              maxSize: 20,
+              output: "htmlAndMathml",
+            },
+          ],
+        ]}
         skipHtml
         urlTransform={(url) => (/^https:\/\//i.test(url) ? url : "")}
         components={{

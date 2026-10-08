@@ -1,6 +1,6 @@
 {
   "name": "orbit",
-  "version": "0.9.4",
+  "version": "0.9.5",
   "description": "ORBIT — Personal AI Agent. Your computer, understood.",
   "private": true,
   "type": "module",
@@ -29,7 +29,8 @@
     "test:desktop-ui": "npm run build && npm run frontend:build && node scripts/desktop-ui-smoke.mjs",
     "build:production": "node scripts/build-desktop.mjs --production",
     "test:release": "node --test scripts/release-pipeline.test.mjs",
-    "check:release": "node scripts/release-checks.mjs"
+    "check:release": "node scripts/release-checks.mjs",
+    "test:visual-security": "node --test scripts/visual-security.test.mjs"
   },
   "keywords": [
     "orbit",
@@ -59,18 +60,25 @@
   "dependencies": {
     "@tauri-apps/api": "^2.11.1",
     "htmlparser2": "12.0.0",
+    "katex": "0.19.0",
+    "lucide-react": "1.52.0",
     "mammoth": "1.13.0",
     "pdfjs-dist": "6.4.299",
     "pg": "^8.13.1",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "react-markdown": "^10.1.0",
+    "rehype-katex": "7.0.1",
     "remark-gfm": "^4.0.1",
+    "remark-math": "6.0.0",
     "zod": "^3.23.8"
   },
   "engines": {
     "node": ">=24"
   },
   "productName": "ORBIT",
-  "packageManager": "npm@11.16.0"
+  "packageManager": "npm@11.16.0",
+  "overrides": {
+    "katex": "$katex"
+  }
 }

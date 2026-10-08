@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { core, errorText } from "./api";
-import { Button, Modal } from "./components";
+import { Button, Modal, Icon } from "./components";
 
 export type Space = {
   id: string;
@@ -55,7 +55,10 @@ export function SpaceManager({
       </p>
       <div className="builder-grid">
         {spaces.map((space) => (
-          <article className="card" key={space.id}>
+          <article className="card knowledge-space-card" key={space.id}>
+            <div className="space-icon">
+              <Icon name="book" size={22} />
+            </div>
             <label>
               <input
                 type="checkbox"

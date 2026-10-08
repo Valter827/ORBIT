@@ -48,7 +48,7 @@ export function LocalModels({
       {runtimes.map((runtime) => (
         <section className="card" key={runtime.endpoint}>
           <h3>{runtime.runtime}</h3>
-          <p className="muted">● Running</p>
+          <p className="muted">Running</p>
           <details>
             <summary>Advanced connection</summary>
             <p>{runtime.endpoint}</p>
@@ -66,8 +66,8 @@ export function LocalModels({
                   <div>
                     <strong>{model.model}</strong>
                     <p className="muted">
-                      Chat ✓ · Vision {model.capabilities?.vision === true ? "✓" : "—"} · Agent tools{" "}
-                      {model.supportsTools ? "✓" : "—"}
+                      Chat supported · Vision {model.capabilities?.vision === true ? "Supported" : "—"} · Agent tools{" "}
+                      {model.supportsTools ? "Supported" : "—"}
                     </p>
                   </div>
                   <Button

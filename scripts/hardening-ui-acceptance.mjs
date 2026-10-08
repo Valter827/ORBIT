@@ -93,7 +93,7 @@ try{
  await page.getByLabel("Current AI",{exact:true}).waitFor();
  await wait(()=>page.locator("#chat-request").evaluate(el=>document.activeElement===el));
  assert.equal(await page.locator(".chat-toolbar,.chat-identity").count(),0);
- assert.equal(await page.getByRole("button",{name:"+ New chat",exact:true}).count(),1);
+ assert.equal(await page.getByRole("button",{name:"New chat",exact:true}).count(),1);
  async function snapshots(kind) {
   for(const [width,height] of [[1100,700],[1366,768],[1440,900],[1920,1080]]) {
    await page.setViewportSize({width,height});

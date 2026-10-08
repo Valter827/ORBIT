@@ -10,9 +10,10 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { createRoot } from "react-dom/client";
 import { listen } from "@tauri-apps/api/event";
 import { native, core, errorText, type Desktop, type Status, type Task, type Event } from "./api";
-import { Logo, Button, Modal, Quick, Approval, EventList, Files, ErrorNotice, Icon } from "./components";
+import { Logo, Button, Modal, Quick, Approval, EventList, Files, ErrorNotice, Icon, ToastRegion } from "./components";
 import { SettingsPanel } from "./settings";
 import "./style.css";
+import "./visual-system.css";
 import { matchesShortcut } from "./keyboard";
 const pages = [
   "Home",
@@ -123,7 +124,8 @@ function App() {
     }
   };
   useEffect(() => {
-    for (const key of ["accent", "density", "animations"]) document.documentElement.dataset[key] = readPreference(key);
+    for (const key of ["accent", "density", "animations", "theme"])
+      document.documentElement.dataset[key] = readPreference(key);
     const openSense = () => {
       setPage("Home");
       setMode("Sense");
@@ -227,6 +229,7 @@ function App() {
         "shell chat-first" + (page === "Settings" ? " settings-open" : "") + (collapsed ? " sidebar-collapsed" : "")
       }
     >
+      <ToastRegion />
       <aside className="rail">
         <div className="brand">
           <Logo />
@@ -241,7 +244,7 @@ function App() {
             writePreference("sidebar", collapsed ? "expanded" : "collapsed");
           }}
         >
-          ☰
+          <Icon name={collapsed ? "expand" : "collapse"} />
         </button>
         <Button
           disabled={chatBusy}
@@ -251,8 +254,9 @@ function App() {
             setNewChatToken((v) => v + 1);
           }}
         >
-          + <span className="nav-label">New chat</span>
+          <Icon name="add" /> <span className="nav-label">New chat</span>
         </Button>
+        <div className="rail-label nav-label">WORKSPACE</div>
         <nav aria-label="Main navigation">
           {[
             ["Home", "Chats", "chat"],
@@ -260,7 +264,7 @@ function App() {
             ["Projects", "Projects", "folder"],
             ["Knowledge", "Knowledge", "book"],
             ["Memory", "Memory", "memory"],
-            ["Browser", "Browser", "book"],
+            ["Browser", "Browser", "browser"],
             ["Agents", "Agent activity", "orbit"],
             ["Files", "Files", "file"],
           ].map(([name, label, icon]) => (
@@ -311,7 +315,9 @@ function App() {
                         {c.title}
                       </button>
                       <details className="recent-menu">
-                        <summary aria-label={"Actions for " + c.title}>⋯</summary>
+                        <summary aria-label={"Actions for " + c.title}>
+                          <Icon name="menu" size={16} />
+                        </summary>
                         <Button
                           disabled={chatBusy}
                           onClick={() => {
@@ -342,10 +348,10 @@ function App() {
         )}
         <div className="rail-foot">
           <button className="navitem" title="Settings" aria-label="Settings" onClick={() => setPage("Settings")}>
-            ⚙ <span className="nav-label">Settings</span>
+            <Icon name="settings" /> <span className="nav-label">Settings</span>
           </button>
           <button title="Command palette" aria-label="Command palette" onClick={() => setPalette(true)}>
-            ⌕ <span className="nav-label">Search / commands</span>
+            <Icon name="search" /> <span className="nav-label">Search / commands</span>
           </button>
           <p className="nav-label">Your AI. Your Rules.</p>
         </div>
@@ -407,7 +413,26 @@ function App() {
                       {ai.profiles.find((p) => p.id === ai.selected)?.intelligence?.auto
                         ? "Brain: Auto"
                         : ai.profiles.find((p) => p.id === ai.selected)?.modelId || "No model"}{" "}
-                      · {chatBusy ? "● Thinking" : brainStatus}
+                      ·{" "}
+                      <Icon
+                        name={
+                          chatBusy
+                            ? "loading"
+                            : brainStatus === "Ready"
+                              ? "check"
+                              : brainStatus === "Offline"
+                                ? "offline"
+                                : "info"
+                        }
+                        size={12}
+                      />{" "}
+                      {chatBusy ? "Thinking" : brainStatus.replace(/^[●○!]\s*/, "")}
+                      {ai.localOnly && (
+                        <span className="local-only-chip">
+                          <Icon name="privacy" size={12} />
+                          Local Only
+                        </span>
+                      )}
                     </p>
                   </div>
                   <div className="header-controls">

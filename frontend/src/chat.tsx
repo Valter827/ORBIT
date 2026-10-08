@@ -1,9 +1,10 @@
+import { SourceCards } from "./source-cards";
 import type { PageContext } from "./browser";
 import { MemorySuggestions } from "./memory";
 import { readPreference, writePreference, focusComposer, type RecentChat } from "./chat-ui";
 import { useState, useEffect, useRef } from "react";
 import { core, errorText } from "./api";
-import { Button, Modal, EmptyState, ErrorNotice, LoadingState } from "./components";
+import { Button, Modal, Icon, Logo, CopyButton, ErrorNotice, LoadingState } from "./components";
 import { MessageBody } from "./message-body";
 import { intelligenceDefaults, type Intelligence } from "./ai-types";
 import type { AIState } from "./ai-types";
@@ -401,13 +402,13 @@ export function ChatPanel({
   useEffect(() => {
     onStatus(
       needsSetup
-        ? "! Needs setup"
+        ? "Needs setup"
         : brain === "Ready"
-          ? "● Ready"
+          ? "Ready"
           : brain === "Offline" || brain === "Model unavailable"
-            ? "○ Offline"
+            ? "Offline"
             : brain === "Connected · not tested"
-              ? "○ Not tested"
+              ? "Not tested"
               : brain,
     );
   }, [needsSetup, brain, onStatus]);
@@ -435,7 +436,13 @@ export function ChatPanel({
       )}
       {loadingHistory && <LoadingState label="Opening conversation…" />}
       {!messages.length && !busy && !loadingHistory && (
-        <EmptyState title="What can I help with?">
+        <section className="welcome-state">
+          <div className="welcome-orbit">
+            <Logo />
+          </div>
+          <span className="eyebrow">YOUR PERSONAL AI SPACE</span>
+          <h1>Make room for your next idea.</h1>
+          <p>Your AI, your context, your rules.</p>
           <span className="empty-ai">{profile?.builtin ? "COSMO" : profile?.name}</span>
           <div className="actions suggestions">
             <Button
@@ -444,7 +451,7 @@ export function ChatPanel({
                 focusComposer();
               }}
             >
-              Explain something
+              <Icon name="star" /> Explain something
             </Button>
             <Button
               onClick={() => {
@@ -452,18 +459,34 @@ export function ChatPanel({
                 focusComposer();
               }}
             >
-              Help with code
+              <Icon name="code" /> Help with code
             </Button>
-            <Button onClick={onSense}>Use Sense</Button>
-            <Button onClick={onProject}>Work on a project</Button>
+            <Button onClick={onSense}>
+              <Icon name="sense" /> Use Sense
+            </Button>
+            <Button onClick={onProject}>
+              <Icon name="folder" /> Work on a project
+            </Button>
           </div>
-        </EmptyState>
+        </section>
       )}
       <div className="chat-transcript" aria-live="polite" aria-busy={busy}>
         {messages.map((m, i) => (
           <article className={"chat-message " + m.role} key={i}>
             <strong>{m.role === "user" ? "You" : profile?.name}</strong>
             <MessageBody text={m.content ?? ""} />
+            {m.role === "assistant" && m.intelligence?.sources && (
+              <SourceCards
+                sources={m.intelligence.sources}
+                onPreview={(s) =>
+                  setSource({ name: s.name, chunks: [{ text: s.text }], url: s.url, retrievedAt: s.retrievedAt })
+                }
+                onAsk={(url) => {
+                  setRequest("Explain this video using available sources: " + url);
+                  focusComposer();
+                }}
+              />
+            )}
             {m.role === "assistant" && !!m.intelligence?.memoryUsed?.length && (
               <details className="response-context">
                 <summary>Memory · {m.intelligence.memoryUsed.length}</summary>
@@ -522,14 +545,7 @@ export function ChatPanel({
             )}
             {m.role === "assistant" && (
               <div className="actions">
-                <Button
-                  variant="quiet"
-                  onClick={() =>
-                    void navigator.clipboard.writeText(m.content ?? "").catch((e) => setError(errorText(e)))
-                  }
-                >
-                  Copy
-                </Button>
+                <CopyButton text={m.content ?? ""} label="Copy answer" />
                 {i === messages.length - 1 && m.intelligence?.kind !== "casual" && (
                   <Button
                     variant="quiet"
@@ -755,6 +771,7 @@ export function ChatPanel({
               disabled={busy || modeSaving}
               onClick={() => void saveIntelligence({ mode })}
             >
+              <Icon name={mode} size={14} />
               {mode[0].toUpperCase() + mode.slice(1)}
             </button>
           ))}
@@ -779,7 +796,11 @@ export function ChatPanel({
             disabled={needsSetup || !restored}
             aria-label={"Ask " + (profile?.name ?? "ORBIT")}
             value={request}
-            onChange={(e) => setRequest(e.target.value)}
+            onChange={(e) => {
+              setRequest(e.target.value);
+              e.target.style.height = "auto";
+              e.target.style.height = Math.min(e.target.scrollHeight, 180) + "px";
+            }}
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
                 e.preventDefault();
@@ -793,7 +814,9 @@ export function ChatPanel({
           />
         </label>
         <details className="context-control">
-          <summary>+ Add context</summary>
+          <summary>
+            <Icon name="attach" size={16} /> Add context
+          </summary>
           <p className="path">{workspace ?? "Open a project to attach files."}</p>
           <label>
             Relative file paths, one per line (maximum 5)
@@ -825,11 +848,15 @@ export function ChatPanel({
         <div className="actions">
           {!busy && (
             <button type="submit" disabled={needsSetup || !restored || !request.trim() || selectedFiles.length > 5}>
-              Send message ↑
+              <Icon name="send" size={18} />
+              <span>Send message</span>
             </button>
           )}
           {busy && (
-            <Button onClick={() => void core("chat.stop").catch((e) => setError(errorText(e)))}>Stop generating</Button>
+            <Button onClick={() => void core("chat.stop").catch((e) => setError(errorText(e)))}>
+              <Icon name="stop" size={16} />
+              Stop generating
+            </Button>
           )}
           {!busy && last && messages.at(-1)?.role === "assistant" && (
             <Button onClick={() => void send(last, true)}>Regenerate</Button>
@@ -845,7 +872,9 @@ export function ChatPanel({
                 title={"Remove " + file}
                 onClick={() => setFiles(selectedFiles.filter((f) => f !== file).join("\n"))}
               >
-                {file} ×
+                <Icon name="file" size={14} />
+                {file}
+                <Icon name="close" size={14} />
               </button>
             ))}
           </div>

@@ -191,7 +191,7 @@ try{
  await page.getByRole("button",{name:"Expand sidebar",exact:true}).click();
  await record("responsive",{status:"PASS",sizes:["1100×700","1366×768","1440×900","1920×1080"],sidebarPersistence:true});
 
- await page.getByRole("button",{name:"+ New chat",exact:true}).click();
+ await page.getByRole("button",{name:"New chat",exact:true}).click();
  await wait(()=>page.locator("#chat-request").evaluate(el=>document.activeElement===el));
  await page.keyboard.type("Line one");await page.keyboard.press("Shift+Enter");await page.keyboard.type("Line two");
  assert.equal(await page.locator("#chat-request").inputValue(),"Line one\nLine two");
