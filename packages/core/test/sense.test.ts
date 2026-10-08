@@ -125,6 +125,11 @@ test("Sense uses real provider transport but never persists screen text or execu
   const requests: Record<string, unknown>[] = [];
   let toolReply = false;
   const server = createServer((req, res) => {
+    if (req.url === "/api/tags") {
+      res.writeHead(404);
+      res.end("{}");
+      return;
+    }
     res.setHeader("content-type", "application/json");
     if (req.url?.endsWith("/models")) {
       res.end(

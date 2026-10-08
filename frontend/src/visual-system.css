@@ -1560,3 +1560,22 @@ small {
   align-items: center;
   gap: 10px;
 }
+
+/* Model Studio follows the existing Visual System 2.0 tokens and focus styles. */
+.model-studio { display: grid; gap: 20px; max-width: 1280px; margin: 0 auto; }
+.studio-heading { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }
+.runtime-grid, .hardware-grid, .model-grid, .role-grid, .capability-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; }
+.runtime-grid { grid-template-columns: repeat(auto-fit, minmax(245px, 1fr)); }
+.brain-identity { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
+.brain-identity > div { flex: 1 1 320px; }
+.model-card { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; padding: 20px; text-align: left; border: 1px solid var(--border); border-radius: 14px; background: var(--bg-surface); color: var(--text-primary); overflow-wrap: anywhere; }
+.model-card[aria-pressed=true] { border-color: var(--accent); background: var(--accent-muted); }
+.model-studio label { display: grid; gap: 8px; }
+.model-studio .check-row { display: flex; gap: 10px; align-items: center; margin: 10px 0; }
+.model-studio select { max-width: 100%; min-width: 0; }
+.model-studio .table-scroll { overflow-x: auto; }
+.model-studio table { width: 100%; border-collapse: collapse; }
+.model-studio th, .model-studio td { text-align: left; padding: 12px; border-bottom: 1px solid var(--border); }
+.model-studio pre { white-space: pre-wrap; max-width: 580px; }
+.capability-grid > div { display: grid; gap: 6px; }
+.model-studio progress { width: 100%; margin: 14px 0; }

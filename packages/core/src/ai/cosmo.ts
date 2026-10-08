@@ -1,8 +1,10 @@
 import { createProfile, type AIProfile } from "./profiles.js";
 export const COSMO_ID = "c05c0100-0000-4000-8000-000000000001";
 export function createCosmo(): AIProfile {
+  const profile = createProfile("COSMO", "cosmo-local");
   return {
-    ...createProfile("COSMO", "cosmo-local"),
+    ...profile,
+    intelligence: { ...profile.intelligence, auto: true },
     id: COSMO_ID,
     builtin: { id: "cosmo", version: "1.0" },
     description: "Personal AI Assistant",

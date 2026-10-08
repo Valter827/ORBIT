@@ -9,6 +9,16 @@ export const IntelligenceSettings = z
     searchProvider: z.enum(["none", "wikipedia", "bing", "duckduckgo"]).default("bing"),
     searchFallback: z.enum(["none", "bing", "duckduckgo"]).default("none"),
     mode: z.enum(["fast", "balanced", "deep"]).default("balanced"),
+    generation: z
+      .object({ temperature: z.number().min(0).max(2).optional(), topP: z.number().min(0.01).max(1).optional() })
+      .strict()
+      .optional(),
+    roles: z
+      .record(
+        z.enum(["Fast", "Main", "Code", "Vision", "Embedding"]),
+        z.object({ provider: z.string().max(100), model: z.string().max(256) }).strict(),
+      )
+      .optional(),
     auto: z.boolean().default(false),
     local: z.boolean().default(true),
     anthropic: z.boolean().default(false),
@@ -132,7 +142,14 @@ export function capabilityRecord(model: ModelDescriptor) {
     local: model.local && model.metadata?.["remote"] !== true && !/:cloud$|-cloud$/.test(model.model),
   };
 }
-export type ModelNeeds = { vision?: boolean; tools?: boolean; context?: number };
+export type ModelNeeds = {
+  availableRamBytes?: number;
+  exclude?: string[];
+  kind?: RequestKind;
+  vision?: boolean;
+  tools?: boolean;
+  context?: number;
+};
 export function chooseModel(
   models: ModelDescriptor[],
   settings: IntelligenceSettings,
@@ -151,6 +168,17 @@ export function chooseModel(
       (!manual || (m.provider === manual.provider && m.model === manual.model))
     );
   });
+  const role = needs.vision ? "Vision" : needs.kind === "coding" ? "Code" : settings.mode === "fast" ? "Fast" : "Main";
+  const assignment = settings.roles?.[role];
+  const roleMatch = (m: ModelDescriptor) => assignment?.provider === m.provider && assignment.model === m.model;
+  const memoryPressure = (m: ModelDescriptor) =>
+    typeof m.metadata?.["sizeBytes"] === "number" && needs.availableRamBytes !== undefined
+      ? m.metadata["sizeBytes"] * 1.4 + 2 * 2 ** 30 > needs.availableRamBytes
+      : false;
+  const loaded = (m: ModelDescriptor) =>
+    m.metadata?.["loaded"] === true &&
+    typeof m.metadata["loadObservedAt"] === "number" &&
+    Date.now() - m.metadata["loadObservedAt"] < 120000;
   suitable.sort((a, b) => {
     const tier =
       settings.mode === "fast" || settings.preference === "speed"
@@ -159,13 +187,25 @@ export function chooseModel(
           ? "reasoning"
           : "balanced";
     return (
+      Number(roleMatch(b)) - Number(roleMatch(a)) ||
       Number(capabilityRecord(b).local) - Number(capabilityRecord(a).local) ||
+      Number(memoryPressure(a)) - Number(memoryPressure(b)) ||
+      (a.metadata?.["benchmarkSuite"] === b.metadata?.["benchmarkSuite"] &&
+      typeof a.metadata?.["benchmarkPassRate"] === "number" &&
+      typeof b.metadata?.["benchmarkPassRate"] === "number"
+        ? needs.kind === "coding"
+          ? Number(b.metadata["codePassRate"]) - Number(a.metadata["codePassRate"])
+          : settings.mode === "fast"
+            ? Number(a.metadata["benchmarkLatencyMs"]) - Number(b.metadata["benchmarkLatencyMs"])
+            : Number(b.metadata["benchmarkPassRate"]) - Number(a.metadata["benchmarkPassRate"])
+        : 0) ||
       ((settings.mode === "fast" || settings.preference === "speed") &&
       typeof a.metadata?.["probeLatencyMs"] === "number" &&
       typeof b.metadata?.["probeLatencyMs"] === "number"
         ? Number(a.metadata["probeLatencyMs"]) - Number(b.metadata["probeLatencyMs"])
         : 0) ||
-      Number(b.tier === tier) - Number(a.tier === tier)
+      Number(b.tier === tier) - Number(a.tier === tier) ||
+      Number(loaded(b)) - Number(loaded(a))
     );
   });
   if (!suitable[0])

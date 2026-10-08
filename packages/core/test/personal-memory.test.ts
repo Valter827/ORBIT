@@ -28,7 +28,7 @@ test("memory migration retains legacy data and creates FTS indexes", async (t) =
   assert.equal(row.content, "Legacy fact Aurora");
   assert.equal(row.status, "active");
   assert.equal(row.type, "fact");
-  assert.equal(store.db.prepare("PRAGMA user_version").get()?.["user_version"], 3);
+  assert.equal(store.db.prepare("PRAGMA user_version").get()?.["user_version"], 4);
   assert.equal(
     store.db.prepare("SELECT count(*) AS n FROM memory_fts WHERE memory_fts MATCH 'Aurora'").get()?.["n"],
     1,

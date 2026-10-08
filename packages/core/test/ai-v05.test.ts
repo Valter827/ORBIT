@@ -57,7 +57,7 @@ test("v05 migrates a v04 SQLite database without losing profiles or memory", asy
   });
   assert.equal(store.profile(profile.id).name, "NOVA");
   assert.equal(store.memory(profile, "project")[0]?.["content"], "Apollo");
-  assert.equal(store.db.prepare("PRAGMA user_version").get()?.["user_version"], 3);
+  assert.equal(store.db.prepare("PRAGMA user_version").get()?.["user_version"], 4);
   const migrated = store.personal.rows(store.profile(profile.id), "project")[0]!;
   assert.equal(migrated.at, 123);
   assert.equal(migrated.updated, 123);
@@ -324,6 +324,11 @@ test("v05 local embeddings use the actual HTTP protocol and semantic index", asy
   const { hub, profile } = await setup(t);
   let calls = 0;
   const server = createServer((req, res) => {
+    if (req.url === "/api/tags") {
+      res.writeHead(404);
+      res.end("{}");
+      return;
+    }
     let body = "";
     req.on("data", (b: Buffer) => (body += b.toString()));
     req.on("end", () => {
@@ -378,6 +383,11 @@ test("v05 preview uses retrieved knowledge, isolates memory, and participates in
   const requested = new Promise<void>((r) => (entered = r));
   let prompt = "";
   const server = createServer((req, res) => {
+    if (req.url === "/api/tags") {
+      res.writeHead(404);
+      res.end("{}");
+      return;
+    }
     res.setHeader("content-type", "application/json");
     if (req.url === "/v1/models") {
       res.end(JSON.stringify({ data: [{ id: "fixture", capabilities: ["tools"] }] }));

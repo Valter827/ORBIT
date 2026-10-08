@@ -527,7 +527,7 @@ export function SettingsPanel({
                 </p>
                 <div className="actions">
                   <Button onClick={onLocalSetup}>Set Up Local AI</Button>
-                  <Button onClick={() => onNavigate("My AIs")}>Change brain</Button>
+                  <Button onClick={() => onNavigate("Model Studio")}>Model Studio</Button>
                   <Button
                     disabled={!profile?.modelId || busy}
                     onClick={() =>

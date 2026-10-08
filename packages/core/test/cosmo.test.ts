@@ -79,6 +79,11 @@ test("COSMO real HTTP protocol fixture: chat, sources, multiple conversations, r
   let present = true;
   const bodies: Array<{ messages: Array<{ role: string; content: string }>; tools?: unknown }> = [];
   const server = createServer((req, res) => {
+    if (req.url === "/api/tags") {
+      res.writeHead(404);
+      res.end("{}");
+      return;
+    }
     void (async () => {
       res.setHeader("content-type", "application/json");
       if (req.url === "/v1/models") {
@@ -124,6 +129,7 @@ test("COSMO real HTTP protocol fixture: chat, sources, multiple conversations, r
   });
   const p = hub.store.profile(COSMO_ID);
   p.modelId = "cosmo-fixture";
+  p.intelligence.auto = false; // This case verifies an explicitly selected manual brain.
   hub.store.saveProfile(p);
   await hub.operation("ai.localOnly", { enabled: true }, "");
   await hub.knowledge.put(p.id, "aurora.md", "Aurora uses the silver launch plan.");
@@ -292,6 +298,11 @@ test("Stop during COSMO model discovery cannot start late inference (fixture)", 
   let observed = false,
     posts = 0;
   const server = createServer((req, res) => {
+    if (req.url === "/api/tags") {
+      res.writeHead(404);
+      res.end("{}");
+      return;
+    }
     if (req.url === "/v1/models") {
       observed = true;
       const timer = setTimeout(() => res.end(JSON.stringify({ data: [{ id: "delayed-model" }] })), 500);

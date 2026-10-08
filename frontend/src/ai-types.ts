@@ -3,6 +3,8 @@ export type Personality =
   "Balanced" | "Professional" | "Friendly" | "Concise" | "Teacher" | "Programmer" | "Custom" | "Creative" | "Technical";
 export type Workflow = { id: string; name: string; steps: string[] };
 export type Intelligence = {
+  generation?: { temperature?: number; topP?: number };
+  roles?: Partial<Record<"Fast" | "Main" | "Code" | "Vision" | "Embedding", { provider: string; model: string }>>;
   web?: "off" | "ask" | "allow";
   searchFallback?: "none" | "bing" | "duckduckgo";
   searchProvider?: "none" | "wikipedia" | "bing" | "duckduckgo";

@@ -1,3 +1,4 @@
+import { migrateModelStudio } from "../ai/model-studio.js";
 import { PersonalMemory, migrateMemory, detectMemory, Candidate, memoryKey, safeMemory } from "./personal-memory.js";
 import { COSMO_ID, createCosmo } from "../ai/cosmo.js";
 import { DatabaseSync } from "node:sqlite";
@@ -15,7 +16,7 @@ export class AIStore {
     this.db = new DatabaseSync(path.join(directory, "ai.sqlite"));
     this.db.exec("PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL;");
     const version = Number(this.db.prepare("PRAGMA user_version").get()?.["user_version"] ?? 0);
-    if (version > 3) throw new Error("AI database needs a newer ORBIT.");
+    if (version > 4) throw new Error("AI database needs a newer ORBIT.");
     this.db.exec(
       "CREATE TABLE IF NOT EXISTS profiles(id TEXT PRIMARY KEY,payload TEXT NOT NULL); CREATE TABLE IF NOT EXISTS preferences(key TEXT PRIMARY KEY,value TEXT NOT NULL); CREATE TABLE IF NOT EXISTS conversations(id TEXT PRIMARY KEY,profile TEXT NOT NULL,project TEXT NOT NULL,title TEXT NOT NULL,updated INTEGER NOT NULL); CREATE TABLE IF NOT EXISTS messages(id INTEGER PRIMARY KEY,conversation TEXT NOT NULL,payload TEXT NOT NULL,at INTEGER NOT NULL); CREATE TABLE IF NOT EXISTS memory(id TEXT PRIMARY KEY,owner TEXT NOT NULL,project TEXT NOT NULL,scope TEXT NOT NULL,source TEXT NOT NULL,content TEXT NOT NULL,at INTEGER NOT NULL);",
     );
@@ -46,6 +47,7 @@ export class AIStore {
       }
     }
     migrateMemory(this.db);
+    migrateModelStudio(this.db);
     this.personal = new PersonalMemory(this.db);
     const existingProfiles = this.profiles();
     if (!existingProfiles.some((p) => p.id === COSMO_ID)) this.saveProfile(createCosmo());

@@ -46,6 +46,8 @@ export async function localHardware() {
     ancestor = path.dirname(ancestor);
   const disk = await fs.statfs(ancestor).catch(() => null);
   let gpu: string | null = null;
+  let vramBytes: number | null = null;
+  let freeVramBytes: number | null = null;
   if (process.platform === "win32") {
     try {
       const result = await promisify(execFile)(
@@ -67,14 +69,32 @@ export async function localHardware() {
     } catch {
       /* Hardware discovery is best effort. */
     }
+    try {
+      // Optional driver utility, never installed or downloaded by ORBIT.
+      const result = await promisify(execFile)(
+        path.join(process.env["SystemRoot"] ?? "C:/Windows", "System32", "nvidia-smi.exe"),
+        ["--query-gpu=memory.total,memory.free", "--format=csv,noheader,nounits"],
+        { timeout: 3000, windowsHide: true, maxBuffer: 8192 },
+      );
+      const first = result.stdout.trim().split(/\r?\n/)[0]?.split(",").map(Number);
+      if (first?.length === 2 && first.every((n) => Number.isFinite(n) && n >= 0)) {
+        vramBytes = first[0]! * 2 ** 20;
+        freeVramBytes = first[1]! * 2 ** 20;
+      }
+    } catch {
+      /* VRAM remains unknown when the driver does not expose it. */
+    }
   }
   return {
+    architecture: os.arch(),
+    platform: os.platform(),
     cpu: os.cpus()[0]?.model ?? null,
     cores: os.cpus().length,
     ramBytes: os.totalmem(),
     freeRamBytes: os.freemem(),
     gpu,
-    vramBytes: null,
+    vramBytes,
+    freeVramBytes,
     modelDirectory,
     diskAvailableBytes: disk ? Number(disk.bavail) * Number(disk.bsize) : null,
     catalog: localCatalog,

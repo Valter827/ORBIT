@@ -1,11 +1,14 @@
+import { ollamaLoaded } from "../ollama-controls.js";
 import { z } from "zod";
 import type { AIProvider, ModelDescriptor, CompletionRequest, CompletionResult, StreamEvent } from "../router.js";
 import { request, jsonBody, sse, checkSignal, AIProviderError, type Fetcher } from "../transport.js";
 import { validateEndpoint, endpointFetch } from "../endpoints.js";
+import { OllamaTags } from "../runtime-discovery.js";
 import { fitContext } from "../context.js";
 export class CompatibleProvider implements AIProvider {
   private cache: ModelDescriptor[] = [];
   private readonly base: URL;
+  private ollama = false;
   private readonly fetcher: Fetcher;
   constructor(
     readonly id: string,
@@ -28,66 +31,63 @@ export class CompatibleProvider implements AIProvider {
     return { "content-type": "application/json", ...(key ? { authorization: "Bearer " + key } : {}) };
   }
   async listModels(signal = AbortSignal.timeout(15000)) {
-    const response = await request(
-      new URL("models", this.base).href,
-      { headers: await this.headers(), signal },
-      this.fetcher,
-    );
-    const data = z
-      .object({
-        data: z.array(
-          z.object({
-            id: z.string(),
-            context_length: z.number().optional(),
-            capabilities: z.array(z.string()).optional(),
-          }),
-        ),
-      })
-      .parse(await jsonBody(response));
-    this.cache = data.data.slice(0, 500).map((m) => ({
-      provider: this.id,
-      model: m.id,
-      contextWindow: m.context_length ?? 0,
-      inputCostPerMTok: null,
-      outputCostPerMTok: null,
-      tier: "balanced",
-      supportsTools: m.capabilities?.includes("tools") ?? false,
-      local: this.local,
-      capabilities: {
-        text: true,
-        streaming: true,
-        toolCalling: m.capabilities ? m.capabilities.includes("tools") : null,
-        vision: m.capabilities ? m.capabilities.includes("vision") : null,
-        structuredOutput: null,
-        contextWindow: m.context_length ?? null,
-      },
-    }));
-    let runtimeVersion: string | undefined;
-    const digests = new Map<string, string>();
-    if (this.local && this.base.port === "11434") {
+    // Ollama's native inventory is authoritative, independent of its OpenAI shim.
+    let tags: z.infer<typeof OllamaTags> | undefined;
+    if (this.local) {
       try {
-        const version = (await jsonBody(
-          await request(new URL("/api/version", this.base).href, { signal }, this.fetcher, 1),
-        )) as { version?: string };
-        runtimeVersion = version.version;
-        const tags = (await jsonBody(
-          await request(new URL("/api/tags", this.base).href, { signal }, this.fetcher, 1),
-        )) as { models?: Array<{ name: string; digest: string }> };
-        for (const item of tags.models ?? []) digests.set(item.name, item.digest);
+        tags = OllamaTags.parse(
+          await jsonBody(
+            await request(
+              new URL("/api/tags", this.base).href,
+              { signal: AbortSignal.any([signal, AbortSignal.timeout(2500)]) },
+              this.fetcher,
+              1,
+            ),
+          ),
+        );
       } catch {
         checkSignal(signal);
       }
     }
-    // Ollama exposes factual model capabilities and metadata; other compatible servers remain unknown.
-    if (this.local && this.base.port === "11434") {
-      for (const m of this.cache) {
-        try {
-          const response = await request(
-            new URL("/api/show", this.base).href,
-            { method: "POST", headers: await this.headers(), body: JSON.stringify({ model: m.model }), signal },
-            this.fetcher,
-            1,
+    this.ollama = !!tags;
+    if (tags) {
+      this.cache = tags.models.map((m) => ({
+        provider: this.id,
+        model: m.name,
+        contextWindow: 0,
+        inputCostPerMTok: null,
+        outputCostPerMTok: null,
+        tier: "balanced",
+        supportsTools: false,
+        local: true,
+        metadata: { ...m.details, digest: m.digest, sizeBytes: m.size, runtime: "Ollama", metadataStatus: "UNKNOWN" },
+        capabilities: {
+          text: false,
+          streaming: true,
+          toolCalling: null,
+          vision: null,
+          structuredOutput: null,
+          contextWindow: null,
+        },
+      }));
+      // Optional metadata must not make a successful inventory disappear on a short timeout.
+      const metadataSignal = AbortSignal.any([signal, AbortSignal.timeout(4000)]);
+      let runtimeVersion: string | undefined;
+      try {
+        const version = z
+          .object({ version: z.string().max(100) })
+          .parse(
+            await jsonBody(
+              await request(new URL("/api/version", this.base).href, { signal: metadataSignal }, this.fetcher, 1),
+            ),
           );
+        runtimeVersion = version.version;
+      } catch {
+        checkSignal(signal);
+      }
+      for (const m of this.cache) {
+        if (metadataSignal.aborted) break;
+        try {
           const info = z
             .object({
               capabilities: z.array(z.string()).optional(),
@@ -95,18 +95,34 @@ export class CompatibleProvider implements AIProvider {
               model_info: z.record(z.unknown()).optional(),
               remote_host: z.string().optional(),
             })
-            .parse(await jsonBody(response));
+            .parse(
+              await jsonBody(
+                await request(
+                  new URL("/api/show", this.base).href,
+                  {
+                    method: "POST",
+                    headers: await this.headers(),
+                    body: JSON.stringify({ model: m.model }),
+                    signal: metadataSignal,
+                  },
+                  this.fetcher,
+                  1,
+                ),
+              ),
+            );
           m.metadata = {
+            ...m.metadata,
             ...info.details,
             runtimeVersion,
-            digest: digests.get(m.model),
+            metadataStatus: "AVAILABLE",
+            declaredCapabilities: info.capabilities ?? [],
             ...(info.remote_host ? { remote: true } : {}),
           };
           m.supportsTools = !!info.capabilities?.includes("tools");
           const size = Object.entries(info.model_info ?? {}).find(([k]) => k.endsWith(".context_length"))?.[1];
-          if (typeof size === "number") m.contextWindow = size;
+          if (typeof size === "number" && Number.isSafeInteger(size) && size > 0) m.contextWindow = size;
           m.capabilities = {
-            text: info.capabilities ? info.capabilities.includes("completion") : true,
+            text: info.capabilities?.includes("completion") ?? false,
             streaming: true,
             toolCalling: info.capabilities ? m.supportsTools : null,
             vision: info.capabilities ? info.capabilities.includes("vision") : null,
@@ -117,7 +133,59 @@ export class CompatibleProvider implements AIProvider {
           checkSignal(signal);
         }
       }
+    } else {
+      const response = await request(
+        new URL("models", this.base).href,
+        { headers: await this.headers(), signal },
+        this.fetcher,
+      );
+      const data = z
+        .object({
+          data: z
+            .array(
+              z.object({
+                id: z.string().min(1),
+                context_length: z.number().positive().optional(),
+                capabilities: z.array(z.string()).optional(),
+              }),
+            )
+            .max(500),
+        })
+        .parse(await jsonBody(response));
+      this.cache = data.data.map((m) => ({
+        provider: this.id,
+        model: m.id,
+        contextWindow: m.context_length ?? 0,
+        inputCostPerMTok: null,
+        outputCostPerMTok: null,
+        tier: "balanced",
+        supportsTools: m.capabilities?.includes("tools") ?? false,
+        local: this.local,
+        capabilities: {
+          text: true,
+          streaming: true,
+          toolCalling: m.capabilities ? m.capabilities.includes("tools") : null,
+          vision: m.capabilities ? m.capabilities.includes("vision") : null,
+          structuredOutput: null,
+          contextWindow: m.context_length ?? null,
+        },
+      }));
     }
+    if (this.ollama && !signal.aborted) {
+      const loaded = await ollamaLoaded(this.base.href, this.fetcher, signal).catch(() => null);
+      if (loaded)
+        for (const model of this.cache) {
+          const resident = loaded.find((item) => item.name === model.model);
+          model.metadata = {
+            ...model.metadata,
+            loaded: !!resident,
+            loadObservedAt: Date.now(),
+            runtimeResidentBytes: resident?.size ?? null,
+            gpuMemoryBytes: resident?.size_vram ?? null,
+          };
+        }
+    }
+    checkSignal(signal);
     return this.cache;
   }
   private body(model: string, input: CompletionRequest, stream: boolean) {
@@ -125,6 +193,7 @@ export class CompatibleProvider implements AIProvider {
     return {
       model,
       stream,
+      ...(stream && this.ollama ? { stream_options: { include_usage: true } } : {}),
       messages: [
         { role: "system", content: req.system },
         ...req.messages.map((m) => {
@@ -154,9 +223,7 @@ export class CompatibleProvider implements AIProvider {
         }),
       ],
       max_tokens: req.maxTokens,
-      ...(req.responseFormat &&
-      ((this.local && this.base.port === "11434") ||
-        this.cache.find((m) => m.model === model)?.capabilities?.structuredOutput === true)
+      ...(req.responseFormat
         ? {
             response_format: req.responseSchema
               ? {
@@ -166,6 +233,7 @@ export class CompatibleProvider implements AIProvider {
               : { type: req.responseFormat },
           }
         : {}),
+      ...(req.topP !== undefined ? { top_p: req.topP } : {}),
       ...(req.temperature !== undefined ? { temperature: req.temperature } : {}),
       ...(req.tools?.length
         ? {

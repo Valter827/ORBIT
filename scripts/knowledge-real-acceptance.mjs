@@ -5,7 +5,7 @@ import {AIHub} from "../dist/packages/core/src/desktop/ai-hub.js";
 import {LocalEmbeddings} from "../dist/packages/core/src/desktop/knowledge.js";
 import {createProfile} from "../dist/packages/core/src/ai/profiles.js";
 const base=path.resolve(".desktop-cache","knowledge-real-"+Date.now()),out="validation/knowledge-real-acceptance.json";
-const evidence={version:"0.9.5",date:new Date().toISOString(),model:"gemma3:4b",steps:{}};
+const evidence={version:"0.10.0",date:new Date().toISOString(),model:"gemma3:4b",steps:{}};
 const save=()=>fs.writeFile(out,JSON.stringify(evidence,null,2));
 const step=async(name,fn)=>{try{evidence.steps[name]={status:"PASS",...await fn()};}catch(e){evidence.steps[name]={status:"FAIL",error:String(e)};}await save();console.log(name+": "+evidence.steps[name].status);};
 let hub;const start=()=>{hub=new AIHub(base,()=>{});hub.configure([{id:"cosmo-local",name:"Ollama",type:"local",endpoint:"http://127.0.0.1:11434/v1/",localInferenceConfirmed:true,remoteAcknowledged:false}],{});hub.store.setPreference("localOnly","true");};

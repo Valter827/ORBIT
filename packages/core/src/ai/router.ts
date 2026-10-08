@@ -60,6 +60,7 @@ export interface CompletionRequest {
   maxTokens: number;
   signal?: AbortSignal;
   temperature?: number;
+  topP?: number;
   responseFormat?: "json_object";
   responseSchema?: Record<string, unknown>;
 }

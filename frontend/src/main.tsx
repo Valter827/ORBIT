@@ -1,3 +1,4 @@
+import { ModelStudio } from "./model-studio";
 import { BrowserPanel, openPublicLink, type PageContext } from "./browser";
 import { readPreference, writePreference, focusComposer, chatGroup, type RecentChat } from "./chat-ui";
 import { LocalSetup } from "./local-setup";
@@ -18,6 +19,7 @@ import { matchesShortcut } from "./keyboard";
 const pages = [
   "Home",
   "My AIs",
+  "Model Studio",
   "Create AI",
   "Projects",
   "Agents",
@@ -261,6 +263,7 @@ function App() {
           {[
             ["Home", "Chats", "chat"],
             ["My AIs", "My AIs", "star"],
+            ["Model Studio", "Model Studio", "memory"],
             ["Projects", "Projects", "folder"],
             ["Knowledge", "Knowledge", "book"],
             ["Memory", "Memory", "memory"],
@@ -678,6 +681,16 @@ function App() {
                 </section>
               ))}
             </>
+          )}
+          {page === "Model Studio" && ai && (
+            <ModelStudio
+              ai={ai}
+              refresh={refresh}
+              onSetup={() => {
+                setPage("Home");
+                setLocalSetup(true);
+              }}
+            />
           )}
           {page === "Files" && <Files key={status?.workspace} />}
           {(page === "My AIs" || page === "Create AI") && (

@@ -36,6 +36,11 @@ async function temp() {
 async function endpoint(handler: (body: Record<string, unknown>, res: ServerResponse) => void) {
   const bodies: Record<string, unknown>[] = [];
   const server = createServer((req, res) => {
+    if (req.url === "/api/tags") {
+      res.writeHead(404);
+      res.end("{}");
+      return;
+    }
     if (req.url === "/v1/models") {
       res.setHeader("content-type", "application/json");
       res.end(JSON.stringify({ data: [{ id: "test-model", context_length: 32768, capabilities: ["tools"] }] }));
@@ -556,6 +561,11 @@ test("v04 import preview preserves requested permissions, confirmed import reduc
 test("v04 connection test blocks cloud-backed local models before inference", async (t) => {
   let inference = 0;
   const server = createServer((req, res) => {
+    if (req.url === "/api/tags") {
+      res.writeHead(404);
+      res.end("{}");
+      return;
+    }
     res.setHeader("content-type", "application/json");
     if (req.url === "/v1/models") res.end(JSON.stringify({ data: [{ id: "fixture:cloud" }] }));
     else {
