@@ -30,6 +30,7 @@ type Result = {
   status: string;
   capabilities: Record<string, string>;
   configuration: { repetitions: number };
+  hardware?: Hardware;
   metadata: Record<string, unknown>;
   cases: {
     name: string;
@@ -161,7 +162,13 @@ export function ModelStudio({
   const compared = evaluations.results.filter((r) => compare.includes(r.id));
   const sameSuite = compared.every(
     (r) =>
-      r.suite === compared[0]?.suite && JSON.stringify(r.configuration) === JSON.stringify(compared[0]?.configuration),
+      r.suite === compared[0]?.suite &&
+      JSON.stringify(r.configuration) === JSON.stringify(compared[0]?.configuration) &&
+      r.hardware !== undefined &&
+      compared[0]?.hardware !== undefined &&
+      (["cpu", "cores", "ramBytes", "gpu", "vramBytes", "architecture"] as const).every(
+        (field) => r.hardware?.[field] === compared[0]?.hardware?.[field],
+      ),
   );
   return (
     <div className="model-studio">
@@ -525,7 +532,9 @@ export function ModelStudio({
                   </tbody>
                 </table>
               </div>
-              <p className="muted">{String(latest.metadata["retrievalPipeline"])}</p>
+              {typeof latest.metadata["retrievalPipeline"] === "string" && (
+                <p className="muted">{latest.metadata["retrievalPipeline"]}</p>
+              )}
             </>
           )}
         </section>
@@ -543,7 +552,8 @@ export function ModelStudio({
       <section className="panel">
         <h2>Compare measured results</h2>
         <p>
-          Select two to four completed runs with the same suite and settings. No downloaded or estimated score is used.
+          Select two to four completed runs with the same suite, settings and hardware. No downloaded or estimated score
+          is used.
         </p>
         {evaluations.results
           .filter((r) => r.status === "COMPLETE")
@@ -585,7 +595,10 @@ export function ModelStudio({
               </table>
             </div>
           ) : (
-            <p role="alert">These suite versions or generation settings differ. Results cannot be compared directly.</p>
+            <p role="alert">
+              Suite versions, generation settings or hardware differ or are unknown. Results cannot be compared
+              directly.
+            </p>
           ))}
       </section>
     </div>
