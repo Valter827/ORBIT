@@ -110,20 +110,10 @@ export function Modal({ title, children }: { title: string; children: React.Reac
             }
             return;
           }
-          if (e.key === "Escape") {
-            const cancel = [...(dialog.current?.querySelectorAll<HTMLButtonElement>("button") ?? [])].find((b) =>
-              /^(Close|Cancel|Not now|Got it)$/.test(b.textContent?.trim() ?? ""),
-            );
-            if (cancel) {
-              e.preventDefault();
-              cancel.click();
-            }
-            return;
-          }
           if (e.key !== "Tab") return;
           const elements = Array.from(
             dialog.current?.querySelectorAll<HTMLElement>(
-              'button:not(:disabled),input:not(:disabled),textarea:not(:disabled),select:not(:disabled),summary,[tabindex="0"]',
+              'a[href],button:not(:disabled),input:not(:disabled),textarea:not(:disabled),select:not(:disabled),summary,[tabindex="0"]',
             ) ?? [],
           ).filter((el) => el.getClientRects().length);
           const first = elements[0],
