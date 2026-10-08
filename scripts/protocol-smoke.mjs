@@ -58,7 +58,11 @@ try {
   assert.deepEqual(await call("history"), []);
   assert.equal((await call("read", { file: "hello.txt" })).content, "Hello ORBIT");
   await assert.rejects(call("read", { file: "../state/database/orbit.sqlite" }));
-  await assert.rejects(call("start", { request: "Cannot run without a key" }), /not configured|Connect this profile.s provider/i);
+  await assert.rejects(
+    call("start", { request: "Cannot run without a key" }),
+    /not configured|Connect this profile.s provider|Selected or allowed brain does not support this request \(confirmed Tools required\)/i,
+  );
+  assert.deepEqual(await call("history"), [], "Rejected agent startup must not create a task");
   await assert.rejects(call("execute_any_shell_command", { command: "whoami" }), /Unknown desktop/);
   await call("shutdown");
   child.stdin.end();

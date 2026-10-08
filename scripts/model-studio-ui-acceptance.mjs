@@ -59,6 +59,28 @@ try {
       await snap("07-" + theme + "-" + width);
     }
   }
+  await page.evaluate(() => document.documentElement.dataset.theme = "dark");
+  await page.setViewportSize({ width: 1440, height: 960 });
+  await page.getByRole("button", { name: "Run real benchmark", exact: true }).click();
+  await page.getByRole("heading", { name: "Benchmark running" }).waitFor();
+  await page.getByRole("heading", { name: "Benchmark running" }).waitFor({ state: "hidden", timeout: 180000 });
+  const comparisons = page.locator('.model-studio .check-row input[type="checkbox"]');
+  await comparisons.nth(0).check(); await comparisons.nth(1).check();
+  await page.getByRole("heading", { name: "Compare measured results" }).scrollIntoViewIfNeeded();
+  await snap("08-repeated-run-comparison-only-one-chat-model");
+  let state = await host.request("ai.state"); let selectedProfile = state.profiles.find(p => p.id === state.selected);
+  await host.request("ai.saveProfile", { ...selectedProfile, modelId: "not-installed-acceptance-model", intelligence: { ...selectedProfile.intelligence, auto: false } });
+  await page.getByRole("button", { name: "Reconnect", exact: true }).click();
+  await page.getByText("Selected missing", { exact: true }).waitFor(); await page.getByText("Selected missing", { exact: true }).scrollIntoViewIfNeeded(); await snap("09-selected-model-missing");
+  await host.request("ai.saveProfile", { ...selectedProfile, modelId: "gemma3:4b", intelligence: { ...selectedProfile.intelligence, auto: true } });
+  await page.getByRole("button", { name: "Reconnect", exact: true }).click();
+  await page.getByText("Ready", { exact: true }).first().waitFor(); await snap("10-runtime-recovered");
+  await page.getByRole("heading", { name: "Your hardware" }).scrollIntoViewIfNeeded(); await snap("11-hardware");
+  await page.getByRole("button", { name: /embeddinggemma:300m.*Ollama/ }).click();
+  await page.getByRole("heading", { name: "embeddinggemma:300m", exact: true }).scrollIntoViewIfNeeded();
+  await page.getByRole("button", { name: "Run real benchmark", exact: true }).click();
+  await page.getByRole("heading", { name: "Latest run · COMPLETE" }).waitFor({ timeout: 90000 });
+  await page.getByRole("heading", { name: "Latest run · COMPLETE" }).scrollIntoViewIfNeeded(); await snap("12-embedding-results");
   assert.deepEqual(errors, []); evidence.checks = { navigation: "PASS", realBenchmark: "PASS", manualAuto: "PASS", darkLightResponsive: "PASS", consoleErrors: 0 };
 } catch (error) { evidence.error = String(error); process.exitCode = 1; await snap("failure").catch(() => {}); }
 finally { await fs.writeFile("validation/studio-ui-010.json", JSON.stringify(evidence, null, 2)); await browser.close(); await new Promise(r => server.close(r)); await host.request("shutdown"); }
