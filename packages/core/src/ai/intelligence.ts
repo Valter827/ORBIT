@@ -15,11 +15,19 @@ export const IntelligenceSettings = z
       .optional(),
     roles: z
       .record(
-        z.enum(["Fast", "Main", "Code", "Vision", "Embedding"]),
-        z.object({ provider: z.string().max(100), model: z.string().max(256) }).strict(),
+        z.enum(["Fast", "Main", "Logic", "Code", "Vision", "Embedding"]),
+        z
+          .object({
+            provider: z.string().max(100),
+            model: z.string().max(256),
+            benchmarkId: z.string().max(100).optional(),
+            digest: z.string().max(200).optional(),
+          })
+          .strict(),
       )
       .optional(),
     auto: z.boolean().default(false),
+    manualRole: z.enum(["Fast", "Main", "Logic", "Code", "Vision"]).optional(),
     local: z.boolean().default(true),
     anthropic: z.boolean().default(false),
     compatible: z.boolean().default(false),
@@ -168,9 +176,22 @@ export function chooseModel(
       (!manual || (m.provider === manual.provider && m.model === manual.model))
     );
   });
-  const role = needs.vision ? "Vision" : needs.kind === "coding" ? "Code" : settings.mode === "fast" ? "Fast" : "Main";
+  const role =
+    settings.manualRole ??
+    (needs.vision
+      ? "Vision"
+      : needs.kind === "coding"
+        ? "Code"
+        : settings.mode === "fast"
+          ? "Fast"
+          : settings.mode === "deep"
+            ? "Logic"
+            : "Main");
   const assignment = settings.roles?.[role];
-  const roleMatch = (m: ModelDescriptor) => assignment?.provider === m.provider && assignment.model === m.model;
+  const roleMatch = (m: ModelDescriptor) =>
+    assignment?.provider === m.provider &&
+    assignment.model === m.model &&
+    (!assignment.digest || assignment.digest === m.metadata?.["digest"]);
   const memoryPressure = (m: ModelDescriptor) =>
     typeof m.metadata?.["sizeBytes"] === "number" && needs.availableRamBytes !== undefined
       ? m.metadata["sizeBytes"] * 1.4 + 2 * 2 ** 30 > needs.availableRamBytes
@@ -197,7 +218,13 @@ export function chooseModel(
           ? Number(b.metadata["codePassRate"]) - Number(a.metadata["codePassRate"])
           : settings.mode === "fast"
             ? Number(a.metadata["benchmarkLatencyMs"]) - Number(b.metadata["benchmarkLatencyMs"])
-            : Number(b.metadata["benchmarkPassRate"]) - Number(a.metadata["benchmarkPassRate"])
+            : settings.mode === "deep" &&
+                typeof a.metadata["reasoningPassRate"] === "number" &&
+                typeof b.metadata["reasoningPassRate"] === "number"
+              ? b.metadata["reasoningPassRate"] - a.metadata["reasoningPassRate"]
+              : typeof a.metadata["coreScore"] === "number" && typeof b.metadata["coreScore"] === "number"
+                ? b.metadata["coreScore"] - a.metadata["coreScore"]
+                : Number(b.metadata["benchmarkPassRate"]) - Number(a.metadata["benchmarkPassRate"])
         : 0) ||
       ((settings.mode === "fast" || settings.preference === "speed") &&
       typeof a.metadata?.["probeLatencyMs"] === "number" &&

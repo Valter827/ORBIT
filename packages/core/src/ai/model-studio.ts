@@ -6,10 +6,13 @@ import { probeIdentity, probeModel } from "./probes.js";
 import { checkSignal } from "./transport.js";
 import { localHardware } from "../desktop/local-setup.js";
 import { LocalEmbeddings } from "../desktop/knowledge.js";
+import { measureBrainPerformance } from "./brain-performance.js";
+import { evaluateToolQuality } from "./brain-tools.js";
+import { BRAIN_EVAL_SUITE, strongerBrainCases, practicalCoreScore, coreWeights } from "./brain-eval.js";
 
-export const EVAL_SUITE = "cosmo-0.10-baseline-3";
-export type CapabilityState = "UNKNOWN" | "SUPPORTED" | "UNSUPPORTED" | "PARTIAL";
-export type BrainRole = "Fast" | "Main" | "Code" | "Vision" | "Embedding";
+export const EVAL_SUITE = BRAIN_EVAL_SUITE;
+export type CapabilityState = "UNKNOWN" | "SUPPORTED" | "UNSUPPORTED" | "PARTIAL" | "UNRELIABLE";
+export type { BrainRole } from "./brain-aliases.js";
 export interface StudioResult {
   id: string;
   identity: string;
@@ -94,7 +97,7 @@ export async function runEmbeddingBaseline(
     capabilities: { chat: "UNSUPPORTED", embedding: "UNKNOWN" },
     cases: [],
     status: "RUNNING",
-    metadata: { ...model.metadata, orbitVersion: "0.10.0", warmCold: "UNKNOWN" },
+    metadata: { ...model.metadata, orbitVersion: "0.10.1", warmCold: "UNKNOWN" },
   };
   store.save(result);
   const started = performance.now();
@@ -153,6 +156,7 @@ type EvalCase = {
 const only = (expected: string) => (text: string) =>
   text.trim().replace(/[.!]$/, "").toLowerCase() === expected.toLowerCase();
 export const baselineCases: EvalCase[] = [
+  ...strongerBrainCases,
   {
     name: "Bounded context recall",
     category: "long context",
@@ -236,7 +240,7 @@ export const baselineCases: EvalCase[] = [
   },
   {
     name: "All supplied project facts",
-    category: "context completeness",
+    category: "context",
     system:
       "Use all supplied facts. Synthetic project context: Project=Atlas; language=TypeScript; blocker=missing test credentials; next task=write migration tests.",
     prompt: "Summarize the project, language, blocker and next task. Include all four facts.",
@@ -245,7 +249,7 @@ export const baselineCases: EvalCase[] = [
   },
   {
     name: "Knowledge source adherence",
-    category: "source adherence",
+    category: "rag",
     system: "Use only this synthetic source. [S1] ORBIT_TEST_FACT_928: The silver planet is Nereon. Cite [S1].",
     prompt: "What is the silver planet? Include the source identifier.",
     validate: (text) => /Nereon/.test(text) && /\[S1\]/.test(text),
@@ -308,13 +312,13 @@ export async function runBaseline(
     at: new Date().toISOString(),
     suite: EVAL_SUITE,
     hardware: await localHardware(),
-    configuration: { temperature: 0, maxTokens: 256, repetitions },
+    configuration: { temperature: 0, maxTokens: 1024, repetitions },
     capabilities: {},
     cases: [],
     status: "RUNNING",
     metadata: {
       ...model.metadata,
-      orbitVersion: "0.10.0",
+      orbitVersion: "0.10.1",
       contextWindow: model.contextWindow || null,
       warmCold: "UNKNOWN",
       processMemoryBytes: null,
@@ -332,10 +336,33 @@ export async function runBaseline(
   }
   store.save(result);
   try {
+    if (model.local && model.metadata?.["runtime"] === "Ollama") {
+      progress({
+        current: "Cold load and three warm performance measurements",
+        completed: 0,
+        total: baselineCases.length * repetitions + 1,
+      });
+      try {
+        result.metadata["performance"] = await measureBrainPerformance(endpoint, model.model, signal);
+      } catch {
+        checkSignal(signal);
+        result.metadata["performance"] = "NOT VERIFIED: performance probe failed";
+      }
+    }
     progress({ current: "Capability probes", completed: 0, total: baselineCases.length * repetitions + 1 });
     const probes = await probeModel(provider, model, endpoint, signal);
     for (const key of ["chat", "streaming", "vision", "structured", "tools", "russian", "context"] as const)
       result.capabilities[key] = probes[key] === "NOT TESTED" ? "UNKNOWN" : probes[key];
+    if (probes.tools === "SUPPORTED") {
+      progress({
+        current: "Tool choice, arguments and restraint",
+        completed: 0,
+        total: baselineCases.length * repetitions + 1,
+      });
+      const quality = await evaluateToolQuality(provider, model.model, signal);
+      result.metadata["toolQuality"] = quality;
+      result.capabilities["tools"] = quality.state;
+    }
     store.saveCapabilities(result.identity, result.capabilities);
     result.capabilities["cancellation"] = "UNKNOWN";
     if (provider.stream) {
@@ -380,6 +407,7 @@ export async function runBaseline(
       result.capabilities["jsonSchema"] = "UNKNOWN";
     }
     store.saveCapabilities(result.identity, result.capabilities);
+    let consecutiveRuntimeErrors = 0;
     for (let run = 0; run < repetitions; run++)
       for (const item of baselineCases) {
         checkSignal(signal);
@@ -433,6 +461,11 @@ export async function runBaseline(
           ...(failure ? { error: failure } : {}),
         });
         store.save(result);
+        consecutiveRuntimeErrors = failure ? consecutiveRuntimeErrors + 1 : 0;
+        if (consecutiveRuntimeErrors >= 3) {
+          result.metadata["earlyStop"] = "Three consecutive runtime failures; remaining cases NOT TESTED.";
+          throw new Error("Runtime failed repeatedly");
+        }
       }
     result.status = "COMPLETE";
   } catch {
@@ -445,6 +478,8 @@ export async function runBaseline(
       return [category, { passed: cases.filter((c) => c.passed).length, total: cases.length }];
     }),
   );
+  result.metadata["coreScore"] = practicalCoreScore(result.cases);
+  result.metadata["coreWeights"] = coreWeights;
   const durations = result.cases.map((c) => c.elapsedMs);
   const mean = durations.length ? durations.reduce((sum, x) => sum + x, 0) / durations.length : null;
   result.metadata["responseTime"] = {

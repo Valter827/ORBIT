@@ -2,7 +2,7 @@ import { freemem } from "node:os";
 import { unloadOllama } from "../ai/ollama-controls.js";
 import { estimateModelFit } from "../ai/model-fit.js";
 import { brainResponse } from "../ai/brain-fallback.js";
-import { ModelStudioStore, runBaseline, runEmbeddingBaseline } from "../ai/model-studio.js";
+import { ModelStudioStore, runBaseline, runEmbeddingBaseline, EVAL_SUITE } from "../ai/model-studio.js";
 import { discoverLocalRuntimes } from "../ai/runtime-discovery.js";
 import { knowledgeConflicts } from "./knowledge-conflicts.js";
 import { Candidate, MemoryType, Importance, detectMemory, classifyMemory } from "./personal-memory.js";
@@ -197,15 +197,31 @@ export class AIHub {
     if (cache && !refresh && Date.now() - cache.at < 300000) return cache.models;
     const models = await provider.listModels!(signal);
     const endpoint = this.configurations.find((c) => c.id === id)?.endpoint ?? id;
+    const savedResults = this.modelStudio.results();
+    const hardware = savedResults.length ? await localHardware() : null;
     for (const model of models) {
       const identity = probeIdentity(endpoint, model);
       const verified = this.modelStudio.capabilities(identity);
       model.metadata = { ...model.metadata, verifiedCapabilities: verified };
-      const benchmark = this.modelStudio.results().find((r) => r.identity === identity && r.status === "COMPLETE");
+      const benchmark = savedResults.find(
+        (r) =>
+          r.identity === identity &&
+          r.status === "COMPLETE" &&
+          r.suite === EVAL_SUITE &&
+          hardware &&
+          (["cpu", "cores", "ramBytes", "gpu", "vramBytes", "architecture"] as const).every(
+            (field) => r.hardware[field] === hardware[field],
+          ),
+      );
       if (benchmark)
         model.metadata = {
           ...model.metadata,
           benchmarkSuite: benchmark.suite,
+          benchmarkId: benchmark.id,
+          coreScore: benchmark.metadata["coreScore"],
+          reasoningPassRate:
+            benchmark.cases.filter((c) => c.category === "reasoning" && c.passed).length /
+            Math.max(1, benchmark.cases.filter((c) => c.category === "reasoning").length),
           benchmarkPassRate: benchmark.cases.filter((c) => c.passed).length / benchmark.cases.length,
           benchmarkLatencyMs: benchmark.cases.reduce((sum, c) => sum + c.elapsedMs, 0) / benchmark.cases.length,
           codePassRate:
@@ -223,8 +239,9 @@ export class AIHub {
         const probe = JSON.parse(cached) as ProbeResults;
         model.metadata = { ...model.metadata, probeLatencyMs: probe.latencyMs, probeAt: probe.at };
         if (model.capabilities) {
-          if (probe.vision !== "NOT TESTED") model.capabilities.vision = probe.vision === "SUPPORTED";
-          if (probe.tools !== "NOT TESTED") {
+          if (!verified["vision"] && probe.vision !== "NOT TESTED")
+            model.capabilities.vision = probe.vision === "SUPPORTED";
+          if (!verified["tools"] && probe.tools !== "NOT TESTED") {
             model.capabilities.toolCalling = probe.tools === "SUPPORTED";
             model.supportsTools = probe.tools === "SUPPORTED";
           }

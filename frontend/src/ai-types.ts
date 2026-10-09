@@ -4,7 +4,13 @@ export type Personality =
 export type Workflow = { id: string; name: string; steps: string[] };
 export type Intelligence = {
   generation?: { temperature?: number; topP?: number };
-  roles?: Partial<Record<"Fast" | "Main" | "Code" | "Vision" | "Embedding", { provider: string; model: string }>>;
+  roles?: Partial<
+    Record<
+      "Fast" | "Main" | "Logic" | "Code" | "Vision" | "Embedding",
+      { provider: string; model: string; benchmarkId?: string; digest?: string }
+    >
+  >;
+  manualRole?: "Fast" | "Main" | "Logic" | "Code" | "Vision";
   web?: "off" | "ask" | "allow";
   searchFallback?: "none" | "bing" | "duckduckgo";
   searchProvider?: "none" | "wikipedia" | "bing" | "duckduckgo";

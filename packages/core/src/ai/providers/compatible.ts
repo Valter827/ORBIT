@@ -94,6 +94,7 @@ export class CompatibleProvider implements AIProvider {
               details: z.record(z.unknown()).optional(),
               model_info: z.record(z.unknown()).optional(),
               remote_host: z.string().optional(),
+              license: z.string().max(200000).optional(),
             })
             .parse(
               await jsonBody(
@@ -116,6 +117,8 @@ export class CompatibleProvider implements AIProvider {
             runtimeVersion,
             metadataStatus: "AVAILABLE",
             declaredCapabilities: info.capabilities ?? [],
+            license: info.license?.trim() || "UNKNOWN",
+            source: "UNKNOWN",
             ...(info.remote_host ? { remote: true } : {}),
           };
           m.supportsTools = !!info.capabilities?.includes("tools");

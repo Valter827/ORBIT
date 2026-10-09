@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from "react";
 import { core, errorText } from "./api";
 import { Button, ErrorNotice, Icon } from "./components";
 import { intelligenceDefaults, type AIState, type Intelligence } from "./ai-types";
+import { comparableBrainResults } from "../../packages/core/src/ai/brain-comparison";
+import { brainAliases, modelProvenance } from "../../packages/core/src/ai/brain-aliases";
 
 type Runtime = {
   runtime: string;
@@ -44,7 +46,7 @@ type Result = {
   }[];
 };
 type EvaluationState = { results: Result[]; progress: { current: string; completed: number; total: number } | null };
-const roles = ["Fast", "Main", "Code", "Vision", "Embedding"] as const;
+const roles = ["Fast", "Main", "Logic", "Code", "Vision", "Embedding"] as const;
 const gb = (bytes: number | null | undefined) => (bytes == null ? "Unknown" : (bytes / 2 ** 30).toFixed(1) + " GB");
 const stateLabel = (state: string) =>
   state
@@ -160,16 +162,16 @@ export function ModelStudio({
     (r) => r.model === selectedModel?.model && r.provider === selectedModel?.provider,
   );
   const compared = evaluations.results.filter((r) => compare.includes(r.id));
-  const sameSuite = compared.every(
-    (r) =>
-      r.suite === compared[0]?.suite &&
-      JSON.stringify(r.configuration) === JSON.stringify(compared[0]?.configuration) &&
-      r.hardware !== undefined &&
-      compared[0]?.hardware !== undefined &&
-      (["cpu", "cores", "ramBytes", "gpu", "vramBytes", "architecture"] as const).every(
-        (field) => r.hardware?.[field] === compared[0]?.hardware?.[field],
-      ),
-  );
+  const roleNames = (m: { provider: string; model: string }) =>
+    roles
+      .filter(
+        (role) =>
+          profile?.intelligence?.roles?.[role]?.provider === m.provider &&
+          profile.intelligence.roles[role]?.model === m.model,
+      )
+      .map((role) => brainAliases[role])
+      .join(" · ");
+  const sameSuite = comparableBrainResults(compared, models, hardware);
   return (
     <div className="model-studio">
       <header className="studio-heading">
@@ -200,11 +202,23 @@ export function ModelStudio({
           Brain selection
           <select
             disabled={busy}
-            value={profile?.intelligence?.auto ? "auto" : "manual"}
-            onChange={(e) => void saveIntelligence({ auto: e.target.value === "auto" })}
+            value={profile?.intelligence?.manualRole ?? (profile?.intelligence?.auto ? "auto" : "manual")}
+            onChange={(e) =>
+              void saveIntelligence({
+                auto: e.target.value !== "manual",
+                manualRole: roles.filter((r) => r !== "Embedding").find((r) => r === e.target.value),
+              })
+            }
           >
             <option value="auto">Auto · recommended</option>
             <option value="manual">Manual · keep my selected model</option>
+            {roles
+              .filter((r) => r !== "Embedding")
+              .map((role) => (
+                <option key={role} value={role} disabled={!profile?.intelligence?.roles?.[role]}>
+                  {brainAliases[role]}
+                </option>
+              ))}
           </select>
         </label>
         <p className="muted">
@@ -264,42 +278,57 @@ export function ModelStudio({
       </section>
       <section className="panel">
         <h2>Brain roles</h2>
-        <p className="muted">
-          Assignments are preferences. Capability and privacy checks still apply. Embedding models never answer chats.
-          Assigning Embedding updates the shared local search backend; existing indexes keep their recorded embedding
-          identity.
-        </p>
         <div className="role-grid">
           {roles.map((role) => (
-            <label key={role}>
-              {role}
-              <select
-                disabled={busy}
-                value={profile?.intelligence?.roles?.[role] ? key(profile.intelligence.roles[role]) : ""}
-                onChange={(e) => {
-                  const assignments = { ...profile?.intelligence?.roles };
-                  const found = models.find((m) => key(m) === e.target.value);
-                  if (found) assignments[role] = { provider: found.provider, model: found.model };
-                  else delete assignments[role];
-                  void saveIntelligence({ roles: assignments });
-                }}
-              >
-                <option value="">Auto / unassigned</option>
-                {models
-                  .filter((m) =>
-                    role === "Embedding"
-                      ? (m.metadata?.["declaredCapabilities"] as string[] | undefined)?.includes("embedding")
-                      : m.capabilities?.text !== false,
-                  )
-                  .map((m) => (
-                    <option key={key(m)} value={key(m)}>
-                      {m.model}
-                    </option>
-                  ))}
-              </select>
-            </label>
+            <article key={role}>
+              <h3>{brainAliases[role]}</h3>
+              <p>
+                {profile?.intelligence?.roles?.[role]
+                  ? "Assigned · capability checks apply"
+                  : "Unassigned · no measured winner selected"}
+              </p>
+            </article>
           ))}
         </div>
+        <details>
+          <summary>Advanced role assignments · exact models</summary>
+          <p className="muted">
+            Assignments are preferences. Capability and privacy checks still apply. Embedding models never answer chats.
+            Assigning Embedding updates the shared local search backend; existing indexes keep their recorded embedding
+            identity.
+          </p>
+          <div className="role-grid">
+            {roles.map((role) => (
+              <label key={role}>
+                {brainAliases[role]}
+                <select
+                  disabled={busy}
+                  value={profile?.intelligence?.roles?.[role] ? key(profile.intelligence.roles[role]) : ""}
+                  onChange={(e) => {
+                    const assignments = { ...profile?.intelligence?.roles };
+                    const found = models.find((m) => key(m) === e.target.value);
+                    if (found) assignments[role] = { provider: found.provider, model: found.model };
+                    else delete assignments[role];
+                    void saveIntelligence({ roles: assignments });
+                  }}
+                >
+                  <option value="">Auto / unassigned</option>
+                  {models
+                    .filter((m) =>
+                      role === "Embedding"
+                        ? (m.metadata?.["declaredCapabilities"] as string[] | undefined)?.includes("embedding")
+                        : m.capabilities?.text !== false,
+                    )
+                    .map((m) => (
+                      <option key={key(m)} value={key(m)}>
+                        {m.model}
+                      </option>
+                    ))}
+                </select>
+              </label>
+            ))}
+          </div>
+        </details>
       </section>
       <section className="panel">
         <details>
@@ -369,7 +398,7 @@ export function ModelStudio({
         <h2>Installed models</h2>
         {!models.length && <p>No connected inventory yet. Reconnect or set up an existing local runtime.</p>}
         <div className="model-grid">
-          {models.map((m) => (
+          {models.map((m, index) => (
             <button
               className="model-card"
               aria-pressed={selected === key(m)}
@@ -377,7 +406,7 @@ export function ModelStudio({
               onClick={() => setSelected(key(m))}
             >
               <Icon name={m.capabilities?.text === false ? "book" : "memory"} />
-              <strong>{m.displayName ?? m.model}</strong>
+              <strong>{roleNames(m) || `Unassigned candidate ${index + 1}`}</strong>
               <span>
                 {m.providerName} · {m.local ? "Local" : "Cloud"}
               </span>
@@ -402,7 +431,7 @@ export function ModelStudio({
           <div className="studio-heading">
             <div>
               <span className="eyebrow">MODEL DETAILS</span>
-              <h2>{selectedModel.model}</h2>
+              <h2>{roleNames(selectedModel) || "Unassigned brain candidate"}</h2>
             </div>
             <Button disabled={busy || !!evaluations.progress} onClick={() => void benchmark()}>
               Run real benchmark
@@ -417,7 +446,7 @@ export function ModelStudio({
                 ...profile,
                 providerId: selectedModel.provider,
                 modelId: selectedModel.model,
-                intelligence: { ...intelligenceDefaults, ...profile.intelligence, auto: false },
+                intelligence: { ...intelligenceDefaults, ...profile.intelligence, auto: false, manualRole: undefined },
               })
                 .then(refresh)
                 .catch((e) => setError(errorText(e)))
@@ -446,7 +475,17 @@ export function ModelStudio({
             </Button>
           )}
           <details>
-            <summary>Runtime metadata</summary>
+            <summary>Advanced Details · underlying model and provenance</summary>
+            <dl>
+              {Object.entries(modelProvenance(selectedModel)).map(([name, value]) => (
+                <div key={name}>
+                  <dt>{name}</dt>
+                  <dd>{value}</dd>
+                </div>
+              ))}
+              <dt>ORBIT role</dt>
+              <dd>{roleNames(selectedModel) || "Unassigned"}</dd>
+            </dl>
             <dl>
               {[
                 "family",
@@ -593,11 +632,37 @@ export function ModelStudio({
                   ))}
                 </tbody>
               </table>
+              <table>
+                <caption>Category results · exact models for technical comparison</caption>
+                <thead>
+                  <tr>
+                    <th>Category</th>
+                    {compared.map((r) => (
+                      <th key={r.id}>{r.model}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {[...new Set(compared.flatMap((r) => r.cases.map((c) => c.category)))].map((category) => (
+                    <tr key={category}>
+                      <th>{category}</th>
+                      {compared.map((r) => {
+                        const cases = r.cases.filter((c) => c.category === category);
+                        return (
+                          <td key={r.id}>
+                            {cases.length ? `${cases.filter((c) => c.passed).length}/${cases.length}` : "NOT TESTED"}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           ) : (
             <p role="alert">
-              Suite versions, generation settings or hardware differ or are unknown. Results cannot be compared
-              directly.
+              Results are incomplete, outdated, or differ in tasks, settings, current model digests or hardware. They
+              cannot be compared directly.
             </p>
           ))}
       </section>

@@ -1,4 +1,5 @@
 import { ModelStudio } from "./model-studio";
+import { brainLabel } from "../../packages/core/src/ai/brain-aliases";
 import { BrowserPanel, openPublicLink, type PageContext } from "./browser";
 import { readPreference, writePreference, focusComposer, chatGroup, type RecentChat } from "./chat-ui";
 import { LocalSetup } from "./local-setup";
@@ -412,11 +413,7 @@ function App() {
                         ?.type === "local"
                         ? "Local"
                         : "Cloud"}{" "}
-                      ·{" "}
-                      {ai.profiles.find((p) => p.id === ai.selected)?.intelligence?.auto
-                        ? "Brain: Auto"
-                        : ai.profiles.find((p) => p.id === ai.selected)?.modelId || "No model"}{" "}
-                      ·{" "}
+                      · {brainLabel(ai.profiles.find((p) => p.id === ai.selected)?.intelligence)} ·{" "}
                       <Icon
                         name={
                           chatBusy

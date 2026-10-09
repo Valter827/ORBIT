@@ -1,4 +1,5 @@
 import { SourceCards } from "./source-cards";
+import { brainLabel, brainAliases, type BrainRole } from "../../packages/core/src/ai/brain-aliases";
 import type { PageContext } from "./browser";
 import { MemorySuggestions } from "./memory";
 import { readPreference, writePreference, focusComposer, type RecentChat } from "./chat-ui";
@@ -597,7 +598,7 @@ export function ChatPanel({
         <aside className="context-panel">
           <h3>Context</h3>
           <p>{profile?.name}</p>
-          <p>{profile?.modelId || "No brain selected"}</p>
+          <p>{brainLabel(profile?.intelligence)}</p>
           <p>Project: {workspace || "None"}</p>
           <p>Knowledge: {ai.knowledgeCounts?.[ai.selected] ?? 0} sources</p>
           <p>
@@ -674,7 +675,7 @@ export function ChatPanel({
             )}
             {generation.contextTokens !== undefined && (
               <p>
-                Estimated input context: {generation.contextTokens.toLocaleString()} tokens · {generation.model}
+                Estimated input context: {generation.contextTokens.toLocaleString()} tokens · {brainLabel(intelligence)}
               </p>
             )}
           </details>
@@ -779,12 +780,26 @@ export function ChatPanel({
             Brain{" "}
             <select
               aria-label="Brain selection"
-              value={intelligence.auto ? "auto" : "manual"}
+              value={intelligence.manualRole ?? (intelligence.auto ? "auto" : "manual")}
               disabled={busy || modeSaving}
-              onChange={(e) => void saveIntelligence({ auto: e.target.value === "auto" })}
+              onChange={(e) =>
+                void saveIntelligence({
+                  auto: e.target.value !== "manual",
+                  manualRole: (Object.keys(brainAliases) as BrainRole[])
+                    .filter((r) => r !== "Embedding")
+                    .find((r) => r === e.target.value),
+                })
+              }
             >
               <option value="auto">Auto</option>
-              <option value="manual">{profile?.modelId || "Manual"}</option>
+              <option value="manual">Manual · advanced model</option>
+              {(Object.keys(brainAliases) as BrainRole[])
+                .filter((r) => r !== "Embedding")
+                .map((role) => (
+                  <option key={role} value={role} disabled={!intelligence.roles?.[role]}>
+                    {brainAliases[role]}
+                  </option>
+                ))}
             </select>
           </label>
         </div>

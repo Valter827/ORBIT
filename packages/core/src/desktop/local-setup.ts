@@ -7,7 +7,31 @@ import { z } from "zod";
 import type { Fetcher } from "../ai/transport.js";
 import { endpointFetch } from "../ai/endpoints.js";
 import { redact } from "../security/redactor.js";
+import { candidateCatalog } from "../ai/candidate-catalog.js";
 export const localCatalog = [
+  ...candidateCatalog
+    .filter((c) => c.selection === "Approval pending" || c.selection === "Deferred")
+    .map((c) => ({
+      id: c.model,
+      label: c.model.includes("coder")
+        ? "COSMO Forge candidate"
+        : c.model.startsWith("deepseek-r1")
+          ? "COSMO Logic candidate"
+          : "COSMO Core candidate",
+      publisher: c.family,
+      source: c.source,
+      license: c.license,
+      licenseUrl: c.source,
+      downloadBytes: c.downloadBytes,
+      minRamBytes: 16 * 2 ** 30,
+      reason:
+        c.reason +
+        ". Catalog checked " +
+        c.retrievedAt +
+        "; fit and quality require local measurement. Underlying model: " +
+        c.model,
+      vision: c.model.startsWith("qwen3.5") || c.model.startsWith("ministral-3"),
+    })),
   {
     id: "gemma3:1b",
     label: "Light",
