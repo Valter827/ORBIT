@@ -226,6 +226,7 @@ export class CompatibleProvider implements AIProvider {
         }),
       ],
       max_tokens: req.maxTokens,
+      ...(this.ollama && req.localReasoningEffort ? { reasoning_effort: req.localReasoningEffort } : {}),
       ...(req.responseFormat
         ? {
             response_format: req.responseSchema

@@ -109,6 +109,7 @@ type ActiveChat = {
   done?: Promise<void>;
 };
 export class AIHub {
+  private readonly sessionBrains = new Map<string, { provider: string; model: string; digest: string }>();
   private readonly internetScopes = new Map<string, InternetGateway>();
   private internet(profile: string, project: string) {
     const key = JSON.stringify([profile, project]);
@@ -408,7 +409,9 @@ export class AIHub {
       try {
         const started = performance.now();
         a.phase = "Analyzing request…";
-        const settings = (input.profileId ? this.store.profile(input.profileId) : this.profile()).intelligence;
+        const routingProfile = input.profileId ? this.store.profile(input.profileId) : this.profile();
+        const sessionKey = JSON.stringify([routingProfile.id, project, a.conversationId]);
+        const settings = routingProfile.intelligence;
         let plan = planContext(input.request, settings.mode, input.files.length > 0);
         if (input.verify) plan.verify = true;
         const { profile, provider, model } = await this.resolve(
@@ -416,7 +419,11 @@ export class AIHub {
           false,
           a.controller.signal,
           undefined,
-          { kind: plan.kind, context: Math.min(settings.contextBudget, estimateTokens(input.request) + 2048) },
+          {
+            kind: plan.kind,
+            context: Math.min(settings.contextBudget, estimateTokens(input.request) + 2048),
+            previousBrain: this.sessionBrains.get(sessionKey),
+          },
         );
         let inference = new InferenceBudget(provider, model, a.controller.signal, 3, settings.contextBudget);
         const extraCalls = capabilityRecord(model).local || settings.cloud === "allow";
@@ -805,6 +812,12 @@ export class AIHub {
         a.phase = "Complete";
         a.usage = result.usage;
         a.model = result.model;
+        const digest = inference.model.metadata?.["digest"];
+        if (result.text.trim() && typeof digest === "string" && digest) {
+          this.sessionBrains.delete(sessionKey);
+          this.sessionBrains.set(sessionKey, { provider: inference.model.provider, model: result.model, digest });
+          if (this.sessionBrains.size > 100) this.sessionBrains.delete(this.sessionBrains.keys().next().value!);
+        }
         const assistant: AIMessage = { role: "assistant", content: a.text, intelligence: a.intelligence };
         if (profile.memory.conversation) {
           this.store.saveTurn(a.conversationId, user, assistant, input.regenerate);

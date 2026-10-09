@@ -151,6 +151,7 @@ export function capabilityRecord(model: ModelDescriptor) {
   };
 }
 export type ModelNeeds = {
+  previousBrain?: { provider: string; model: string; digest: string } | undefined;
   availableRamBytes?: number;
   exclude?: string[];
   kind?: RequestKind;
@@ -247,7 +248,40 @@ export function chooseModel(
               : "") +
         ". Choose a compatible brain; no fallback was used.",
     );
-  return suitable[0];
+  const winner = suitable[0];
+  // Keep a successful session brain only within a measured five-point quality gap.
+  // Manual/specialist selection and all eligibility filters remain authoritative.
+  if (
+    !manual &&
+    !settings.manualRole &&
+    settings.mode !== "deep" &&
+    needs.kind !== "coding" &&
+    !needs.vision &&
+    !needs.tools
+  ) {
+    const previous = suitable.find(
+      (m) =>
+        m.provider === needs.previousBrain?.provider &&
+        m.model === needs.previousBrain.model &&
+        m.metadata?.["digest"] === needs.previousBrain.digest,
+    );
+    const score = (m: ModelDescriptor) => m.metadata?.["coreScore"];
+    if (
+      previous &&
+      previous.local &&
+      winner.local &&
+      !memoryPressure(previous) &&
+      typeof previous.metadata?.["benchmarkSuite"] === "string" &&
+      previous.metadata["benchmarkSuite"] === winner.metadata?.["benchmarkSuite"] &&
+      typeof score(previous) === "number" &&
+      typeof score(winner) === "number" &&
+      Number.isFinite(score(previous)) &&
+      Number.isFinite(score(winner)) &&
+      Number(score(previous)) >= Number(score(winner)) - 0.05
+    )
+      return previous;
+  }
+  return winner;
 }
 export type Evidence = { sourceId: string; name: string; text: string; url?: string; retrievedAt?: string };
 export type Verification = {

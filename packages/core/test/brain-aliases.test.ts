@@ -62,3 +62,53 @@ test("Logic role cannot bypass local privacy or verified image capability", () =
   assert.equal(chooseModel([base, { ...other, local: false }], settings, {}, true).model, "baseline");
   assert.throws(() => chooseModel([other], settings, { vision: true }), /Vision/);
 });
+
+test("session stickiness requires comparable quality and preserves manual, privacy and capability gates", () => {
+  const old: ModelDescriptor = {
+    provider: "local",
+    model: "old",
+    local: true,
+    contextWindow: 8192,
+    inputCostPerMTok: null,
+    outputCostPerMTok: null,
+    tier: "balanced",
+    supportsTools: false,
+    metadata: { digest: "old-d", benchmarkSuite: "same", benchmarkPassRate: 0.8, coreScore: 0.8 },
+    capabilities: {
+      text: true,
+      streaming: true,
+      vision: false,
+      toolCalling: false,
+      structuredOutput: true,
+      contextWindow: 8192,
+    },
+  };
+  const newer: ModelDescriptor = {
+    ...old,
+    model: "new",
+    metadata: { digest: "new-d", benchmarkSuite: "same", benchmarkPassRate: 0.83, coreScore: 0.83 },
+  };
+  const needs = { previousBrain: { provider: "local", model: "old", digest: "old-d" } };
+  const settings = IntelligenceSettings.parse({ auto: true, roles: { Main: { provider: "local", model: "new" } } });
+  assert.equal(chooseModel([old, newer], settings, needs, true).model, "old");
+  assert.equal(
+    chooseModel([old, newer], settings, { previousBrain: { ...needs.previousBrain, digest: "changed" } }, true).model,
+    "new",
+  );
+  assert.equal(chooseModel([{ ...old, local: false }, newer], settings, needs, true).model, "new");
+  assert.equal(
+    chooseModel([old, { ...newer, metadata: { ...newer.metadata, coreScore: 0.95 } }], settings, needs, true).model,
+    "new",
+  );
+  assert.equal(chooseModel([old, newer], { ...settings, manualRole: "Main" }, needs, true).model, "new");
+  assert.equal(chooseModel([old, newer], settings, needs, true, { provider: "local", model: "new" }).model, "new");
+  assert.equal(
+    chooseModel(
+      [old, { ...newer, capabilities: { ...newer.capabilities!, vision: true } }],
+      settings,
+      { ...needs, vision: true },
+      true,
+    ).model,
+    "new",
+  );
+});

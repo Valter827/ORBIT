@@ -91,9 +91,15 @@ export async function probeModel(
       const response = await provider.complete(model.model, {
         ...request,
         temperature: 0,
+        localReasoningEffort: "none",
         signal: AbortSignal.any([signal, AbortSignal.timeout(25000)]),
       });
-      result[key] = validate(response) ? "SUPPORTED" : "UNSUPPORTED";
+      result[key] =
+        !response.text.trim() && !response.toolCalls.length
+          ? "NOT TESTED"
+          : validate(response)
+            ? "SUPPORTED"
+            : "UNSUPPORTED";
       if (key === "chat" && result.chat === "SUPPORTED") result.latencyMs = performance.now() - start;
     } catch {
       checkSignal(signal);
@@ -183,6 +189,7 @@ export async function probeModel(
         final = false;
       for await (const event of provider.stream(model.model, {
         system: "Say OK. /no_think",
+        localReasoningEffort: "none",
         messages: [{ role: "user", content: "Reply OK." }],
         maxTokens: 64,
         signal: AbortSignal.any([signal, AbortSignal.timeout(25000)]),
@@ -191,7 +198,7 @@ export async function probeModel(
         if (event.type === "text" && event.text) chunks++;
         if (event.type === "result") final = true;
       }
-      result.streaming = chunks > 0 && final ? "SUPPORTED" : "UNSUPPORTED";
+      result.streaming = chunks > 0 && final ? "SUPPORTED" : "NOT TESTED";
     } catch {
       checkSignal(signal);
     }

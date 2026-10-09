@@ -55,3 +55,17 @@ Continuation checkpoint 2026-10-09:
 - Fixed license typing after the official catalog metadata update. Full check:release PASS (323 core + 4 release + 3 security, 11 skipped). A sandbox run failed on OS temp-path/symlink restrictions; the authorized unrestricted rerun passed, without changing Windows policy.
 - Evidence is validation/brain-eval-0101-gemma3-4b.json and validation/checks.json. These isolated synthetic acceptance conversations contain no user's private conversations.
 - Still no new model download and no strongest-model verdict. Windows binaries for 0.10.1 are not yet produced.
+User explicitly approved all three named downloads with 'давай' after the listed sizes and official-source request. Sequential official Ollama pulls started with pre-download disk reserve and post-download digest verification. Approval-pending notes above are superseded for these three only.
+
+All three approved models finished downloading; exact catalog digests matched (validation/approved-downloads-0101.json). Existing Ollama restarted after it was found stopped. Sequential real suite-3 candidate acceptance started; no winner assigned yet.
+
+2026-10-09 continued real evaluation:
+- All three approved official downloads completed and exact digests matched. About 11.3 GB free on C: after installation.
+- Real Qwen and Ministral short probes confirmed chat, streaming, vision, structured output and a protocol tool call. Ministral missed the strict one-word Russian instruction; this is not proof that it cannot speak Russian. Context maximum remains NOT TESTED.
+- Found a real thinking-budget failure: Qwen with runtime-default thinking consumed 256/1024-token limits without a visible answer. Interrupted diagnostic saved in validation/qwen-default-thinking-diagnostic.json. Do not rank this incomplete run.
+- Explicit Ollama reasoning_effort=none produced Qwen OK in 319 ms. Added optional localReasoningEffort, forwarded only to detected Ollama, for capability probes. Empty bounded answers remain NOT TESTED, never false UNSUPPORTED. Other runtimes receive no Ollama extension. Official reference: https://github.com/ollama/ollama/blob/main/docs/api/openai-compatibility.mdx.
+- DeepSeek exhausted a 128-token compatibility request, but produced real native OK with num_ctx=4096, num_predict=1024, 164 output tokens and 4249.78 ms total. Only final answer/counts saved; no reasoning text. Short probes remain inconclusive, no Agent PASS.
+- Full unchanged suite-3 default-thinking candidate comparison restarted and remains RUNNING. It is not a completed ranking. Performance and bounded answer failures must be reported honestly; direct-mode scores must never be mixed with default-thinking runs.
+- Added successful session-brain retention scoped by profile/project/conversation and bounded to 100 entries. Only comparable measured core scores within five percentage points qualify; manual, Deep, coding, image/tool needs, privacy, digest and resource eligibility gates apply first. Missing/stale measurement never qualifies.
+- Full check:release PASS after changes: types/lint/format/core/release/security/frontend. Regression tests cover empty probes and stickiness eligibility. Current regression suite 336 total, 325 pass, 11 skipped; 4 release and 3 security tests also pass.
+- Still required: await full candidate comparisons, appropriate direct/thinking mode evaluation and measured role recommendations; remaining release acceptance and fresh Windows artifacts. No release-complete claim.

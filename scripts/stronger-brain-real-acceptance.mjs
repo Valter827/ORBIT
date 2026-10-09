@@ -18,6 +18,8 @@ const step = async (name, action) => { try { evidence.steps[name] = { status: "P
 let hub;
 const start = () => { hub = new AIHub(directory, () => {}); hub.configure(configuration, {}); hub.store.setPreference("localOnly", "true"); };
 start();
+let progressLast = "";
+const progressTimer = setInterval(() => { const r = hub.modelStudio.results()[0]; if (!r) return; const current = `${testedModel}: ${r.status}, ${r.cases.length} cases recorded`; if (current !== progressLast) { console.log(current); progressLast = current; } }, 15000);
 try {
   await step("runtime", async () => {
     const runtimes = await discoverLocalRuntimes(); assert.equal(runtimes[0].state, "READY");
@@ -91,6 +93,6 @@ try {
     assert.equal(hub.modelStudio.results()[0].id, before[0].id);
     return { benchmarkPersisted: true, selectedBrainPreserved: true };
   });
-} finally { await hub.shutdown(); }
+} finally { clearInterval(progressTimer); await hub.shutdown(); }
 evidence.completed = true; await save();
 if (Object.values(evidence.steps).some(s => s.status === "FAIL")) process.exitCode = 1;

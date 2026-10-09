@@ -61,6 +61,8 @@ export interface CompletionRequest {
   signal?: AbortSignal;
   temperature?: number;
   topP?: number;
+  /** Explicit Ollama reasoning control; ignored by other runtimes. */
+  localReasoningEffort?: "none" | "low" | "medium" | "high";
   responseFormat?: "json_object";
   responseSchema?: Record<string, unknown>;
 }
