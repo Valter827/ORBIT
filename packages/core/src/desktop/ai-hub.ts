@@ -1,3 +1,4 @@
+import { evaluatedRoleBindings } from "../ai/evaluated-brains.js";
 import { freemem } from "node:os";
 import { unloadOllama } from "../ai/ollama-controls.js";
 import { estimateModelFit } from "../ai/model-fit.js";
@@ -1524,6 +1525,27 @@ export class AIHub {
       } finally {
         if (this.previewWork === work) this.previewWork = undefined;
       }
+    }
+    if (method === "ai.applyEvaluatedRoles") {
+      const input = z.object({ profileId: z.string().uuid() }).strict().parse(value);
+      if (this.busy()) throw new Error("Stop inference before changing brain assignments.");
+      const inventory: ModelDescriptor[] = [];
+      for (const config of this.configurations) {
+        if (config.type === "local" && config.localInferenceConfirmed)
+          inventory.push(...(await this.models(config.id, true)));
+      }
+      const assignments = evaluatedRoleBindings(inventory, await localHardware());
+      if (Object.keys(assignments).length !== 6)
+        throw new Error(
+          "Current hardware, runtime or installed model digests do not match all six evaluated roles. Run local benchmarks or assign roles in Advanced Details.",
+        );
+      const profile = this.store.profile(input.profileId);
+      await this.operation(
+        "ai.saveProfile",
+        { ...profile, intelligence: { ...profile.intelligence, roles: assignments } },
+        project,
+      );
+      return { applied: true, roles: assignments };
     }
     if (method === "ai.studioResults") return { results: this.modelStudio.results(), progress: this.studioProgress };
     if (method === "ai.studioCancel") {

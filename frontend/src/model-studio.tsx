@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { core, errorText } from "./api";
 import { Button, ErrorNotice, Icon } from "./components";
 import { intelligenceDefaults, type AIState, type Intelligence } from "./ai-types";
+import { brainOutcome } from "../../packages/core/src/ai/brain-outcomes";
 import { comparableBrainResults } from "../../packages/core/src/ai/brain-comparison";
 import { brainAliases, modelProvenance } from "../../packages/core/src/ai/brain-aliases";
 
@@ -278,6 +279,24 @@ export function ModelStudio({
       </section>
       <section className="panel">
         <h2>Brain roles</h2>
+        <Button
+          disabled={busy || !profile}
+          onClick={() => {
+            if (!profile) return;
+            setBusy(true);
+            setError("");
+            void core("ai.applyEvaluatedRoles", { profileId: profile.id })
+              .then(refresh)
+              .catch((e) => setError(errorText(e)))
+              .finally(() => setBusy(false));
+          }}
+        >
+          Apply measured 0.10.1 roles
+        </Button>
+        <p className="muted">
+          Uses completed release measurements only when hardware, runtime and all installed model digests match. Exact
+          identities remain in Advanced Details.
+        </p>
         <div className="role-grid">
           {roles.map((role) => (
             <article key={role}>
@@ -562,7 +581,7 @@ export function ModelStudio({
                             <pre>{c.error ?? c.response}</pre>
                           </details>
                         </td>
-                        <td>{c.error ? "ERROR" : c.passed ? "PASS" : "FAIL"}</td>
+                        <td>{brainOutcome(c)}</td>
                         <td>{(c.elapsedMs / 1000).toFixed(2)} s</td>
                         <td>{c.ttftMs == null ? "Unknown" : Math.round(c.ttftMs) + " ms"}</td>
                         <td>{c.tokensPerSecond?.toFixed(1) ?? "Unknown"}</td>
