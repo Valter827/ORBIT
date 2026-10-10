@@ -1,0 +1,372 @@
+// ORBIT — data model
+// Local-first: this database lives on the user's machine. Nothing here is
+// synced anywhere unless the user turns on cloud sync (phase 3).
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [vector, pg_trgm]
+}
+
+// ─── Identity ──────────────────────────────────────────────────────────
+
+model User {
+  id          String   @id @default(cuid())
+  displayName String
+  createdAt   DateTime @default(now())
+  settings    Json     @default("{}")
+
+  projects      Project[]
+  conversations Conversation[]
+  memories      Memory[]
+  tasks         AgentTask[]
+  permissions   Permission[]
+  auditLogs     AuditLog[]
+  usage         UsageRecord[]
+  github        GitHubConnection?
+}
+
+// ─── Workspace ─────────────────────────────────────────────────────────
+
+model Project {
+  id          String    @id @default(cuid())
+  userId      String
+  name        String
+  rootPath    String
+  stack       String[]  @default([])
+  fileCount   Int       @default(0)
+  lastScanAt  DateTime?
+  healthScore Json?
+  isDemo      Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+
+  user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversations Conversation[]
+  memories      Memory[]
+  tasks         AgentTask[]
+  snapshots     ContextSnapshot[]
+
+  @@unique([userId, rootPath])
+  @@index([userId, lastScanAt])
+}
+
+// ─── Conversation ──────────────────────────────────────────────────────
+
+model Conversation {
+  id        String   @id @default(cuid())
+  userId    String
+  projectId String?
+  title     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user     User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project  Project?    @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  messages Message[]
+  tasks    AgentTask[]
+
+  @@index([userId, updatedAt(sort: Desc)])
+  @@index([projectId])
+}
+
+enum MessageRole {
+  user
+  assistant
+  system
+  tool
+}
+
+model Message {
+  id             String      @id @default(cuid())
+  conversationId String
+  role           MessageRole
+  content        String
+  /// Provider, model, latency, redaction summary.
+  metadata       Json        @default("{}")
+  inputTokens    Int?
+  outputTokens   Int?
+  createdAt      DateTime    @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+}
+
+// ─── Memory ────────────────────────────────────────────────────────────
+
+enum MemoryKind {
+  user
+  project
+  technical
+  task
+  conversation
+}
+
+model Memory {
+  id         String     @id @default(cuid())
+  userId     String
+  projectId  String?
+  kind       MemoryKind
+  /// Short retrievable statement, e.g. "Auth uses NextAuth with a Prisma adapter."
+  title      String
+  body       String
+  /// Decays over time unless reinforced; drives eviction.
+  confidence Float      @default(0.5)
+  sourceType String?
+  sourceRef  String?
+  /// text-embedding dimensionality; change alongside the embedding model.
+  embedding  Unsupported("vector(1536)")?
+  pinned     Boolean    @default(false)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  lastUsedAt DateTime?
+
+  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project  Project?         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  outgoing MemoryRelation[] @relation("from")
+  incoming MemoryRelation[] @relation("to")
+
+  @@index([userId, kind])
+  @@index([projectId, kind])
+  @@index([userId, lastUsedAt(sort: Desc)])
+}
+
+/// Powers the Memory Graph page.
+model MemoryRelation {
+  id       String @id @default(cuid())
+  fromId   String
+  toId     String
+  /// depends_on | part_of | contradicts | supersedes | relates_to
+  relation String
+  weight   Float  @default(1)
+
+  from Memory @relation("from", fields: [fromId], references: [id], onDelete: Cascade)
+  to   Memory @relation("to", fields: [toId], references: [id], onDelete: Cascade)
+
+  @@unique([fromId, toId, relation])
+  @@index([toId])
+}
+
+// ─── Agent ─────────────────────────────────────────────────────────────
+
+enum TaskStatus {
+  planning
+  awaiting_approval
+  running
+  completed
+  failed
+  cancelled
+  denied
+  stopped
+}
+
+model AgentTask {
+  id             String     @id @default(cuid())
+  userId         String
+  projectId      String?
+  conversationId String?
+  prompt         String
+  /// Ordered plan shown in the approval dialog.
+  plan           Json?
+  status         TaskStatus @default(planning)
+  stopReason     String?
+  summary        String?
+  verified       Boolean    @default(false)
+  /// Snapshot ids + file backups needed to undo this task.
+  undoManifest   Json?
+  startedAt      DateTime   @default(now())
+  finishedAt     DateTime?
+
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project      Project?        @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  conversation Conversation?   @relation(fields: [conversationId], references: [id], onDelete: SetNull)
+  steps        AgentStep[]
+  executions   ToolExecution[]
+  permissions  Permission[]
+  snapshot     ContextSnapshot?
+
+  @@index([userId, startedAt(sort: Desc)])
+  @@index([status])
+}
+
+model AgentStep {
+  id         String    @id @default(cuid())
+  taskId     String
+  index      Int
+  label      String
+  status     String
+  attempt    Int       @default(0)
+  startedAt  DateTime  @default(now())
+  finishedAt DateTime?
+
+  task       AgentTask       @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  executions ToolExecution[]
+
+  @@unique([taskId, index, attempt])
+}
+
+// ─── Tools ─────────────────────────────────────────────────────────────
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+model Tool {
+  id          String    @id @default(cuid())
+  name        String    @unique
+  domain      String
+  description String
+  baseRisk    RiskLevel
+  enabled     Boolean   @default(true)
+  skills      Skill[]   @relation("SkillTools")
+
+  executions ToolExecution[]
+}
+
+model ToolExecution {
+  id           String    @id @default(cuid())
+  toolId       String
+  taskId       String?
+  stepId       String?
+  action       String
+  input        Json
+  output       Json?
+  risk         RiskLevel
+  ok           Boolean   @default(false)
+  errorMessage String?
+  durationMs   Int?
+  /// Unified diff for file writes; null for read-only calls.
+  diff         String?
+  createdAt    DateTime  @default(now())
+
+  tool Tool       @relation(fields: [toolId], references: [id])
+  task AgentTask? @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  step AgentStep? @relation(fields: [stepId], references: [id], onDelete: Cascade)
+
+  @@index([taskId, createdAt])
+  @@index([toolId, createdAt(sort: Desc)])
+}
+
+// ─── Permissions & audit ───────────────────────────────────────────────
+
+enum GrantMode {
+  once
+  task
+  always
+  deny
+}
+
+model Permission {
+  id          String    @id @default(cuid())
+  userId      String
+  taskId      String?
+  domain      String
+  action      String
+  targetScope String    @default("*")
+  mode        GrantMode
+  risk        RiskLevel
+  reason      String
+  grantedAt   DateTime  @default(now())
+  expiresAt   DateTime?
+  revokedAt   DateTime?
+
+  user User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  task AgentTask? @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([userId, domain, action])
+  @@index([expiresAt])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String
+  /// tool.read | tool.write | permission.granted | agent.started | context.sent ...
+  event     String
+  actor     String
+  target    String?
+  detail    Json     @default("{}")
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([event, createdAt(sort: Desc)])
+}
+
+// ─── Skills, integrations, context ─────────────────────────────────────
+
+model Skill {
+  id           String  @id @default(cuid())
+  key          String  @unique
+  name         String
+  description  String
+  enabled      Boolean @default(true)
+  builtIn      Boolean @default(true)
+  systemPrompt String
+  tools        Tool[]  @relation("SkillTools")
+}
+
+model GitHubConnection {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  login          String
+  scopes         String[]
+  /// Reference into the OS keychain — never the token itself.
+  keychainRef    String
+  connectedAt    DateTime @default(now())
+  lastVerifiedAt DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model BrowserSession {
+  id        String    @id @default(cuid())
+  label     String
+  /// Domains the user allowed for this session.
+  allowlist String[]  @default([])
+  headless  Boolean   @default(false)
+  startedAt DateTime  @default(now())
+  endedAt   DateTime?
+}
+
+model ContextSnapshot {
+  id        String   @id @default(cuid())
+  projectId String?
+  taskId    String?  @unique
+  /// Filtered, redacted payload actually sent to the model.
+  payload   Json
+  /// Sources included vs dropped, and redaction counts — shown in Privacy.
+  provenance Json    @default("{}")
+  approxChars Int    @default(0)
+  createdAt DateTime @default(now())
+
+  project Project?   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  task    AgentTask? @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, createdAt(sort: Desc)])
+}
+
+model UsageRecord {
+  id           String   @id @default(cuid())
+  userId       String
+  provider     String
+  model        String
+  taskKind     String
+  inputTokens  Int
+  outputTokens Int
+  costUsd      Decimal  @db.Decimal(10, 6)
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([userId, provider, createdAt])
+}

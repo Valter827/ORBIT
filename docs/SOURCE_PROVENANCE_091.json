@@ -1,0 +1,10 @@
+{
+  "version": "0.9.1",
+  "sourceArchive": "ORBIT-0.9.0-knowledge-source-20261005.zip",
+  "sourceSHA256": "F259D3041233AAF595F8CF89BE72380E6E32AC1603375C9D433888BC5FB35A30",
+  "sourceSize": 1208105,
+  "extractedEntries": 254,
+  "extractedIntoNewDirectory": true,
+  "evidenceArchiveUsedAsCode": false,
+  "priorExecutablesCopied": false
+}

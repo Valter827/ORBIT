@@ -1,0 +1,6 @@
+{
+  "identifier": "main",
+  "description": "Main window may receive events only; sensitive operations are validated Rust application commands.",
+  "windows": ["main"],
+  "permissions": ["core:event:allow-listen", "core:event:allow-unlisten"]
+}
