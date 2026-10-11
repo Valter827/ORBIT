@@ -3,6 +3,104 @@ import { core, errorText } from "./api";
 import { Button, ErrorNotice } from "./components";
 import type { TrainingStorage, TrainingJob, TrainingConfig } from "../../packages/core/src/training/types";
 import { TrainingConfigSchema } from "../../packages/core/src/training/types";
+import type { compareEvaluations } from "../../packages/core/src/training/evaluation";
+function MeasuredProgress({ job }: { job: TrainingJob }) {
+  const points = job.events.flatMap((event) => {
+    const metrics = event["metrics"] as Record<string, unknown> | undefined;
+    const loss = metrics?.["loss"];
+    return typeof event["step"] === "number" && typeof loss === "number" && Number.isFinite(loss)
+      ? [{ step: event["step"], loss }]
+      : [];
+  });
+  if (!points.length) return <p className="muted">Loss measurements are not available yet.</p>;
+  const min = Math.min(...points.map((p) => p.loss)),
+    max = Math.max(...points.map((p) => p.loss));
+  const coordinates = points
+    .map(
+      (p) => `${12 + (376 * p.step) / job.config.maxSteps},${108 - (96 * (p.loss - min)) / Math.max(0.001, max - min)}`,
+    )
+    .join(" ");
+  const latest = points.at(-1)!;
+  return (
+    <figure>
+      <figcaption>
+        Training loss · step {latest.step}/{job.config.maxSteps} · {latest.loss.toFixed(4)}
+      </figcaption>
+      <progress value={latest.step} max={job.config.maxSteps} aria-label="Measured training steps" />
+      <svg
+        viewBox="0 0 400 120"
+        role="img"
+        aria-label={`Measured training loss, range ${min.toFixed(4)} to ${max.toFixed(4)}`}
+      >
+        <polyline points={coordinates} fill="none" stroke="currentColor" strokeWidth="2" />
+        {points.map((p, i) => (
+          <circle
+            key={i}
+            cx={12 + (376 * p.step) / job.config.maxSteps}
+            cy={108 - (96 * (p.loss - min)) / Math.max(0.001, max - min)}
+            r="3"
+            fill="currentColor"
+          />
+        ))}
+      </svg>
+      <details>
+        <summary>Accessible loss values</summary>
+        <table>
+          <thead>
+            <tr>
+              <th>Step</th>
+              <th>Loss</th>
+            </tr>
+          </thead>
+          <tbody>
+            {points.map((p, i) => (
+              <tr key={i}>
+                <td>{p.step}</td>
+                <td>{p.loss.toFixed(4)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </details>
+    </figure>
+  );
+}
+function MeasuredComparison({ value }: { value: unknown }) {
+  const comparison = value as ReturnType<typeof compareEvaluations>;
+  return (
+    <>
+      <table>
+        <caption>Held-out measured accuracy</caption>
+        <thead>
+          <tr>
+            <th>Category</th>
+            <th>Base</th>
+            <th>Adapter</th>
+            <th>Observations</th>
+          </tr>
+        </thead>
+        <tbody>
+          {comparison.scores.map((score) => (
+            <tr key={score.category}>
+              <td>{score.category}</td>
+              <td>{(score.base * 100).toFixed(1)}%</td>
+              <td>{(score.adapter * 100).toFixed(1)}%</td>
+              <td>{score.count}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p>
+        {comparison.independentItems} independent items. Improvement {(comparison.improvement * 100).toFixed(1)}{" "}
+        percentage points; paired uncertainty ±{(comparison.uncertainty95 * 100).toFixed(1)} points.
+      </p>
+      <details>
+        <summary>Full evaluation evidence</summary>
+        <pre>{JSON.stringify(value, null, 2)}</pre>
+      </details>
+    </>
+  );
+}
 type LabState = {
   dataset: {
     version: string;
@@ -417,6 +515,7 @@ function Lab() {
                 {j.config.method} · {j.config.pilot ? "pilot" : "full run"} · {j.created}
               </p>
               {j.error && <p role="status">{j.error}</p>}
+              <MeasuredProgress job={j} />
               <div className="actions">
                 {j.state === "Draft" && (
                   <Button disabled={busy || active} onClick={() => void action("ai.trainingStart", { id: j.id })}>
@@ -459,7 +558,7 @@ function Lab() {
                 <h4>
                   {j.id.slice(0, 8)} · {j.state}
                 </h4>
-                <pre>{JSON.stringify(j.evaluation, null, 2)}</pre>
+                <MeasuredComparison value={j.evaluation} />
               </article>
             ))}
           {!state.jobs.some((j) => j.evaluation) && (

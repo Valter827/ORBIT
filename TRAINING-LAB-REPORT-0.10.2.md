@@ -56,7 +56,7 @@ Existing roles preserved: Swift=ministral-3:8b, Core=gemma3:4b, Logic=deepseek-r
 ## Regression evidence
 
 - npm ci: PASS, original locked app dependencies only.
-- check:release: PASS (345 tests; 334 PASS, 11 skipped), plus typecheck/lint/format/release/security/frontend checks.
+- check:release: PASS (346 tests; 335 PASS, 11 skipped), plus typecheck/lint/format/release/security/frontend checks.
 - Training Lab browser/core acceptance: PASS; storage, hidden held-out answers, honest missing-dependency/base failure, restart persistence, no fabricated adapter, existing role preservation.
 - Real Memory on pinned Gemma: 10/10 PASS.
 - Real Knowledge: 9/9 PASS.

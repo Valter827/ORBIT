@@ -362,8 +362,10 @@ export class TrainingLab {
     this.save();
     this.running = this.evaluatePair(job)
       .catch((e) => {
-        job.state = "Failed";
-        job.error = "Evaluation failed: " + String(e);
+        if (job.state !== "Cancelled") {
+          job.state = "Failed";
+          job.error = "Evaluation failed: " + String(e);
+        }
         this.save();
       })
       .finally(() => {
@@ -372,6 +374,21 @@ export class TrainingLab {
     return { started: true };
   }
   private async evaluatePair(job: TrainingJob) {
+    validateStorage(this.settings, this.privateRoot);
+    const savedConfig = read(path.join(job.directory, "config.json"));
+    if (hash(savedConfig["config"]) !== job.configHash || savedConfig["baseDirectory"] !== this.settings!.models)
+      throw Error("Experiment configuration changed before evaluation.");
+    const provenance = read(path.join(this.settings!.models, ".orbit-base.json"));
+    const files = z
+      .array(z.object({ path: z.string(), sha256: z.string().regex(/^[a-f0-9]{64}$/) }).strict())
+      .parse(provenance["files"]);
+    if (hash(files) !== job.baseHash) throw Error("Base manifest changed before evaluation.");
+    for (const file of files) {
+      const target = checkedPath(path.resolve(this.settings!.models, file.path));
+      if (!inside(this.settings!.models, target) || (await fileHash(target)) !== file.sha256)
+        throw Error("Base weights changed before evaluation.");
+      if (job.state === "Cancelled") return;
+    }
     if (
       !job.adapter ||
       (await fileHash(checkedPath(path.join(job.adapterDirectory, "adapter_model.safetensors")))) !== job.adapter.hash
@@ -388,6 +405,7 @@ export class TrainingLab {
         ["--config", path.join(job.directory, "eval-config.json"), "--mode", "eval"],
         (e) => {
           job.events.push(e);
+          if (job.events.length > 300) job.events.shift();
           this.save();
         },
       );
@@ -410,7 +428,7 @@ export class TrainingLab {
       const run: EvalRun = {
         suite: HELDOUT_VERSION,
         datasetHash: job.datasetHash,
-        baseHash: job.baseHash!,
+        baseHash: job.baseHash,
         configHash: hash({ temperature: 0, maxTokens: 512, seed: job.config.seed }),
         complete: output["complete"] === true && rows.length === prompts.length,
         observations: rows.map((r) => {

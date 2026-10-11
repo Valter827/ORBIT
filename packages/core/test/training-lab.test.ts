@@ -6,7 +6,7 @@ import path from "node:path";
 import { cosmoDataset } from "../src/training/dataset-v1.js";
 import { validateDataset, scoreAnswer } from "../src/training/dataset.js";
 import { baselineCases } from "../src/ai/model-studio.js";
-import { TrainingConfigSchema } from "../src/training/types.js";
+import { TrainingConfigSchema, type TrainingJob } from "../src/training/types.js";
 import { compareEvaluations, type EvalRun } from "../src/training/evaluation.js";
 import { checkedPath, validateStorage, prepareOwned } from "../src/training/storage.js";
 import { TrainingLab } from "../src/training/lab.js";
@@ -111,4 +111,39 @@ test("Authored code answers match deterministic JS/TS semantics", () => {
   const flags: boolean[] = [true, false, true];
   assert.equal(flags.filter(Boolean).length, 2);
   assert.equal(Object.keys({ red: 1, green: 2, blue: 3 }).length, 3);
+});
+test("Evaluation refuses changed experiment configuration before starting a worker", async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "orbit-training-identity-"));
+  try {
+    const py = path.join(root, "python.exe");
+    fs.writeFileSync(py, "path validation only; must never execute");
+    const privateRoot = path.join(root, "private");
+    const lab = new TrainingLab(privateRoot);
+    lab.configure({
+      models: path.join(root, "models"),
+      training: path.join(root, "runs"),
+      datasets: path.join(root, "datasets"),
+      adapters: path.join(root, "adapters"),
+      python: py,
+    });
+    const job = lab.draft({ base: "google/gemma-3-4b-it", revision: "093f9f388b31de276ce2de164bdc2081324b9767" });
+    fs.mkdirSync(job.directory);
+    fs.writeFileSync(
+      path.join(job.directory, "config.json"),
+      JSON.stringify({ config: { ...job.config, seed: 99 }, baseDirectory: path.join(root, "models") }),
+    );
+    const statePath = path.join(privateRoot, "training-lab", "state.json");
+    const saved = JSON.parse(fs.readFileSync(statePath, "utf8")) as { jobs: TrainingJob[] };
+    saved.jobs[0]!.state = "Completed";
+    saved.jobs[0]!.adapter = { hash: "0".repeat(64), bytes: 1 };
+    fs.writeFileSync(statePath, JSON.stringify(saved));
+    const reloaded = new TrainingLab(privateRoot);
+    reloaded.evaluate(job.id);
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    assert.equal(reloaded.state().jobs[0]!.state, "Failed");
+    assert.match(reloaded.state().jobs[0]!.error!, /configuration changed/);
+    assert.equal(reloaded.busy(), false);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
 });
