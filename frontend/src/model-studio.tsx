@@ -1,3 +1,4 @@
+import { TrainingLab } from "./training-lab";
 import { useCallback, useEffect, useState } from "react";
 import { core, errorText } from "./api";
 import { Button, ErrorNotice, Icon } from "./components";
@@ -192,6 +193,7 @@ export function ModelStudio({
           </Button>
         </div>
       </header>
+      <TrainingLab />
       {error && <ErrorNotice details={error} />}
       <section className="panel brain-identity">
         <Icon name="memory" size={28} />

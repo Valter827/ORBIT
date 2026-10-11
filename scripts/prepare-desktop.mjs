@@ -15,6 +15,7 @@ await build({
   outfile: "src-tauri/resources/core/host.mjs",
 });
 await build({entryPoints:["packages/core/src/desktop/knowledge-document-worker.ts"],bundle:true,platform:"node",target:"node24",format:"esm",external:["pdfjs-dist/*","mammoth","htmlparser2"],outfile:"src-tauri/resources/core/knowledge-document-worker.mjs"});
+await fs.copyFile("training/worker.py", "src-tauri/resources/core/training-worker.py");
 await prepareDocumentRuntime();
 await fs.cp("vendor/node", "src-tauri/resources/node", { recursive: true });
 const pkg = JSON.parse(await fs.readFile("package.json", "utf8"));

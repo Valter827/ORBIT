@@ -38,3 +38,10 @@ validation/windows-v051-failure.png
 
 # Generated acceptance output and local state
 validation/
+
+# Python training artifacts stay outside source
+__pycache__/
+*.pyc
+*.safetensors
+*.gguf
+training-env/

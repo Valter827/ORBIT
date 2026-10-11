@@ -1579,3 +1579,19 @@ small {
 .model-studio pre { white-space: pre-wrap; max-width: 580px; }
 .capability-grid > div { display: grid; gap: 6px; }
 .model-studio progress { width: 100%; margin: 14px 0; }
+.training-entry { margin-block: 1.25rem; }
+.training-lab { margin-top: 1.25rem; min-width: 0; }
+.training-lab > nav { flex-wrap: wrap; margin-bottom: 1.5rem; gap: .5rem; }
+.training-lab button[aria-pressed="true"] { background: var(--accent-soft, #303652); border-color: var(--accent, #a9b6ff); }
+.training-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 1rem; margin-block: 1rem; }
+.training-grid label { display: flex; flex-direction: column; gap: .5rem; min-width: 0; }
+.training-grid input, .training-grid select { width: 100%; min-width: 0; }
+.training-lab pre { max-height: 24rem; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
+.training-lab dd, .training-lab code { overflow-wrap: anywhere; }
+.training-lab .studio-card { margin-bottom: .75rem; }
+.training-lab input[type="checkbox"] { width: auto; margin-right: .5rem; }
+.training-lab > nav.actions { display: flex; flex-direction: row; justify-content: flex-start; align-items: center; width: 100%; padding: 0 0 1rem; margin: 0 0 1rem; border-bottom: 1px solid var(--border); }
+.training-lab > nav.actions button { flex: 0 0 auto; width: auto; }
+.training-lab .training-card { padding: 20px; margin-bottom: .75rem; }
+.training-lab .training-card h3, .training-lab .training-card h4 { margin-top: 0; }
+.training-lab .training-grid { align-items: stretch; }

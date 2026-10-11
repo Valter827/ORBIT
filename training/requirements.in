@@ -1,0 +1,10 @@
+# Installed only with explicit approval, in an isolated environment. Resolve and record exact versions before a run.
+# GPU wheel selection must support the detected RTX 5060 / CUDA driver.
+torch
+transformers>=4.51
+peft>=0.15
+accelerate
+bitsandbytes
+safetensors
+sentencepiece
+protobuf

@@ -1,3 +1,4 @@
+import { TrainingLab } from "../training/lab.js";
 import { evaluatedRoleBindings } from "../ai/evaluated-brains.js";
 import { freemem } from "node:os";
 import { unloadOllama } from "../ai/ollama-controls.js";
@@ -135,6 +136,7 @@ export class AIHub {
   readonly store: AIStore;
   readonly knowledge: KnowledgeLibrary;
   readonly modelStudio: ModelStudioStore;
+  readonly trainingLab: TrainingLab;
   private studioProgress: { current: string; completed: number; total: number } | null = null;
   private configurations: ProviderConfiguration[] = [];
   private providers = new Map<string, AIProvider>();
@@ -149,6 +151,7 @@ export class AIHub {
     this.store = new AIStore(path.join(directory, "database"));
     this.knowledge = new KnowledgeLibrary(this.store.db);
     this.modelStudio = new ModelStudioStore(this.store.db);
+    this.trainingLab = new TrainingLab(directory);
     const embedding = z
       .object({ endpoint: z.string(), model: z.string() })
       .nullable()
@@ -177,7 +180,7 @@ export class AIHub {
     return value ? new LocalEmbeddings(value.endpoint, value.model) : undefined;
   }
   busy() {
-    return !!this.active?.running || !!this.previewWork;
+    return !!this.active?.running || !!this.previewWork || this.trainingLab.busy();
   }
   profile() {
     const id = this.store.preference("selected");
@@ -1059,6 +1062,28 @@ export class AIHub {
     }
   }
   async operation(method: string, value: unknown, project: string) {
+    if (method.startsWith("ai.training")) {
+      if (method === "ai.trainingState") return this.trainingLab.state();
+      if (method === "ai.trainingStorage") return this.trainingLab.configure(value);
+      if (method === "ai.trainingProbe") return this.trainingLab.probe();
+      if (method === "ai.trainingDraft") return this.trainingLab.draft(value);
+      if (method === "ai.trainingDeleteAdapter") {
+        const request = z
+          .object({ id: z.string().uuid(), confirmed: z.literal(true) })
+          .strict()
+          .parse(value);
+        return this.trainingLab.deleteAdapter(request.id, request.confirmed);
+      }
+      const input = z.object({ id: z.string().uuid() }).strict().parse(value);
+      if (method === "ai.trainingStart" || method === "ai.trainingEvaluate") {
+        if (this.busy() || this.knowledge.busy())
+          throw new Error("Stop active inference/indexing before training or evaluation.");
+        return method === "ai.trainingStart" ? this.trainingLab.start(input.id) : this.trainingLab.evaluate(input.id);
+      }
+      if (method === "ai.trainingCancel") return this.trainingLab.cancel(input.id);
+      if (method === "ai.trainingExport") return this.trainingLab.export(input.id);
+      throw new Error("Unknown training operation.");
+    }
     if (
       this.busy() &&
       [
@@ -1885,6 +1910,7 @@ export class AIHub {
     throw new Error("Unknown AI operation.");
   }
   async shutdown() {
+    await this.trainingLab.shutdown();
     this.clearInternet();
     this.previewWork?.controller.abort();
     await this.previewWork?.done?.catch(() => {});
