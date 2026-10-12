@@ -1,1 +1,4 @@
-training/datasets/** -text
+* text=auto eol=lf
+*.png binary
+# Preserve exact immutable dataset bytes, including the original CRLF endings.
+training/datasets/** -text whitespace=cr-at-eol
