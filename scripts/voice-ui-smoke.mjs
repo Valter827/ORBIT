@@ -80,6 +80,19 @@ await page.addInitScript(() => {
   window.stops = 0;
   window.micCalls = 0;
   window.tracksStopped = 0;
+  window.audioPauses = 0;
+  window.Audio = class {
+    constructor() {
+      window.fixturePlayer = this;
+    }
+    play() {
+      this.onplaying?.();
+      return Promise.resolve();
+    }
+    pause() {
+      window.audioPauses++;
+    }
+  };
   window.__TAURI_INTERNALS__ = { invoke: (cmd, args) => window.invokeFixture(cmd, args) };
   Object.defineProperty(navigator, "mediaDevices", {
     value: {
@@ -165,6 +178,16 @@ try {
   await page.getByText("Listening · microphone active").waitFor();
   await page.getByRole("button", { name: "Stop Voice", exact: true }).click();
   evidence.checks.push("Voice Mode visible start and stop PASS");
+  await page.getByRole("button", { name: "Read response aloud" }).click();
+  await page.waitForFunction(() => document.querySelector(".voice-speaking"));
+  while (!pending) await new Promise((r) => setTimeout(r, 10));
+  pending.resolve({ audio: Buffer.alloc(44).toString("base64"), mime: "audio/wav" });
+  pending = undefined;
+  await page.waitForFunction(() => window.fixturePlayer);
+  await page.getByRole("button", { name: "Stop Voice", exact: true }).click();
+  assert.equal(await page.evaluate(() => window.audioPauses), 1);
+  assert.equal(await page.evaluate(() => window.fixturePlayer.src), "");
+  evidence.checks.push("Stop pauses active playback and clears source immediately PASS (audio double)");
   assert.ok(!calls.includes("chat.start")); // component delegates through the supplied existing chat callback
   evidence.status = "PASS";
 } catch (e) {

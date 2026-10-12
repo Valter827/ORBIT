@@ -1,5 +1,7 @@
 // Real local providers with public synthetic text. No microphone or audio files.
 import fs from "node:fs";
+import http from "node:http";
+import https from "node:https";
 import { WindowsSpeech, WhisperSpeech } from "../dist/packages/core/src/voice/providers.js";
 import { voiceDefaults } from "../dist/packages/core/src/voice/service.js";
 import { createDesktopHost } from "../dist/packages/core/src/desktop/host.js";
@@ -82,6 +84,15 @@ try {
       const host = createDesktopHost(() => {}),
         network = [];
       const originalFetch = globalThis.fetch;
+      const transports = [http, https].map((transport) => ({ transport, request: transport.request }));
+      for (const entry of transports)
+        entry.transport.request = function (input, ...args) {
+          const url = new URL(input);
+          network.push(url.origin + url.pathname);
+          if (!["127.0.0.1", "localhost", "[::1]"].includes(url.hostname))
+            throw Error("Acceptance forbids remote network");
+          return entry.request.call(entry.transport, input, ...args);
+        };
       globalThis.fetch = async (input, options) => {
         const url = new URL(typeof input === "string" ? input : (input.url ?? input));
         network.push(url.origin);
@@ -151,12 +162,14 @@ try {
           enabled: (await host.request("ai.state")).localOnly,
           configuredEndpoint: "http://127.0.0.1:11434/v1/",
           remoteProvidersConfigured: 0,
-          fetchOrigins: [...new Set(network)],
-          transportCapture: "NOT VERIFIED: provider may use node:http rather than global fetch",
+          requestTargets: [...new Set(network)],
+          transportCapture: "node:http, node:https and global fetch guarded; payloads and headers not logged",
+          chatTransportObserved: network.some((url) => /chat\/completions|api\/chat/.test(url)),
         };
       } finally {
         await host.request("shutdown");
         globalThis.fetch = originalFetch;
+        for (const entry of transports) entry.transport.request = entry.request;
       }
     }
     const abort = new AbortController();
