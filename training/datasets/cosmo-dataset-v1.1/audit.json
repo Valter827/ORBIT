@@ -1,0 +1,2219 @@
+{
+  "version": "cosmo-dataset-v1.1",
+  "valid": true,
+  "errors": [],
+  "hash": "26a2a994975fa9b8c141f06b47359fc7a31879a1091e9a22e5e10ded11869fd0",
+  "counts": {
+    "train": 300,
+    "validation": 70,
+    "heldout": 70
+  },
+  "languages": {
+    "uk": 350,
+    "en": 60,
+    "ru": 30
+  },
+  "families": 215,
+  "crossSplitFamilyOverlap": 0,
+  "oldHeldoutTasks": 14,
+  "oldHeldoutTopSimilarities": [
+    {
+      "id": "heldout-code-js-map-filter-0",
+      "oldIndex": 7,
+      "jaccard": 0.2608695652173913
+    },
+    {
+      "id": "train-code-js-reduce-1",
+      "oldIndex": 7,
+      "jaccard": 0.21739130434782608
+    },
+    {
+      "id": "train-code-py-list-concat-1",
+      "oldIndex": 7,
+      "jaccard": 0.18181818181818182
+    },
+    {
+      "id": "train-code-js-string-repeat-0",
+      "oldIndex": 7,
+      "jaccard": 0.18181818181818182
+    },
+    {
+      "id": "train-code-js-string-repeat-1",
+      "oldIndex": 7,
+      "jaccard": 0.18181818181818182
+    },
+    {
+      "id": "train-code-js-reduce-0",
+      "oldIndex": 7,
+      "jaccard": 0.17391304347826086
+    },
+    {
+      "id": "train-code-js-reduce-2",
+      "oldIndex": 7,
+      "jaccard": 0.16666666666666666
+    },
+    {
+      "id": "train-code-js-reduce-3",
+      "oldIndex": 7,
+      "jaccard": 0.16666666666666666
+    },
+    {
+      "id": "heldout-code-py-nested-comprehension-0",
+      "oldIndex": 7,
+      "jaccard": 0.14814814814814814
+    },
+    {
+      "id": "train-code-py-list-concat-0",
+      "oldIndex": 7,
+      "jaccard": 0.13636363636363635
+    }
+  ],
+  "crossSplitLexicalCandidates": [
+    {
+      "a": "train-russian-ru-agreement-0-0",
+      "b": "heldout-russian-ru-participle-0",
+      "jaccard": 0.8333333333333334
+    },
+    {
+      "a": "train-russian-ru-agreement-3-0",
+      "b": "heldout-russian-ru-participle-0",
+      "jaccard": 0.8333333333333334
+    },
+    {
+      "a": "train-english-en-rule-2-0",
+      "b": "validation-english-en-irregular-0",
+      "jaccard": 0.8461538461538461
+    },
+    {
+      "a": "train-json-json-integer-0",
+      "b": "validation-json-json-empty-list-0",
+      "jaccard": 0.8333333333333334
+    },
+    {
+      "a": "train-json-json-integer-0",
+      "b": "heldout-json-json-empty-map-0",
+      "jaccard": 0.8333333333333334
+    },
+    {
+      "a": "train-json-json-integer-1",
+      "b": "validation-json-json-empty-list-0",
+      "jaccard": 0.8333333333333334
+    },
+    {
+      "a": "train-json-json-integer-1",
+      "b": "heldout-json-json-empty-map-0",
+      "jaccard": 0.8333333333333334
+    },
+    {
+      "a": "train-json-json-integer-2",
+      "b": "validation-json-json-empty-list-0",
+      "jaccard": 0.8333333333333334
+    },
+    {
+      "a": "train-json-json-integer-2",
+      "b": "heldout-json-json-empty-map-0",
+      "jaccard": 0.8333333333333334
+    },
+    {
+      "a": "train-json-json-integer-3",
+      "b": "validation-json-json-empty-list-0",
+      "jaccard": 0.8333333333333334
+    },
+    {
+      "a": "train-json-json-integer-3",
+      "b": "heldout-json-json-empty-map-0",
+      "jaccard": 0.8333333333333334
+    },
+    {
+      "a": "validation-json-json-empty-list-0",
+      "b": "heldout-json-json-empty-map-0",
+      "jaccard": 0.8823529411764706
+    },
+    {
+      "a": "validation-json-json-zero-string-0",
+      "b": "heldout-json-json-empty-map-0",
+      "jaccard": 0.8333333333333334
+    },
+    {
+      "a": "train-hallucination-missing-maker-0",
+      "b": "validation-hallucination-missing-warranty-0",
+      "jaccard": 0.8571428571428571
+    },
+    {
+      "a": "train-hallucination-missing-maker-0",
+      "b": "validation-hallucination-missing-diameter-0",
+      "jaccard": 0.8055555555555556
+    },
+    {
+      "a": "train-hallucination-missing-maker-0",
+      "b": "heldout-hallucination-missing-serial-0",
+      "jaccard": 0.8571428571428571
+    },
+    {
+      "a": "train-hallucination-missing-maker-0",
+      "b": "heldout-hallucination-missing-license-0",
+      "jaccard": 0.8055555555555556
+    },
+    {
+      "a": "train-hallucination-missing-maker-0",
+      "b": "heldout-hallucination-missing-power-0",
+      "jaccard": 0.8055555555555556
+    },
+    {
+      "a": "train-hallucination-missing-maker-0",
+      "b": "heldout-hallucination-missing-coordinate-0",
+      "jaccard": 0.8055555555555556
+    },
+    {
+      "a": "train-hallucination-missing-maker-1",
+      "b": "validation-hallucination-missing-postal-0",
+      "jaccard": 0.8108108108108109
+    },
+    {
+      "a": "train-hallucination-missing-maker-1",
+      "b": "heldout-hallucination-missing-calibration-0",
+      "jaccard": 0.8108108108108109
+    },
+    {
+      "a": "train-hallucination-missing-maker-2",
+      "b": "validation-hallucination-missing-diameter-0",
+      "jaccard": 0.8333333333333334
+    },
+    {
+      "a": "train-hallucination-missing-maker-2",
+      "b": "heldout-hallucination-missing-license-0",
+      "jaccard": 0.8333333333333334
+    },
+    {
+      "a": "train-hallucination-missing-maker-3",
+      "b": "validation-hallucination-missing-origin-0",
+      "jaccard": 0.8108108108108109
+    },
+    {
+      "a": "train-hallucination-missing-maker-3",
+      "b": "heldout-hallucination-missing-power-0",
+      "jaccard": 0.8333333333333334
+    },
+    {
+      "a": "train-hallucination-missing-weight-0",
+      "b": "validation-hallucination-missing-postal-0",
+      "jaccard": 0.8611111111111112
+    },
+    {
+      "a": "train-hallucination-missing-weight-0",
+      "b": "heldout-hallucination-missing-calibration-0",
+      "jaccard": 0.8611111111111112
+    },
+    {
+      "a": "train-hallucination-missing-price-0",
+      "b": "validation-hallucination-missing-diameter-0",
+      "jaccard": 0.8857142857142857
+    },
+    {
+      "a": "train-hallucination-missing-price-0",
+      "b": "heldout-hallucination-missing-license-0",
+      "jaccard": 0.8857142857142857
+    },
+    {
+      "a": "train-hallucination-missing-price-2",
+      "b": "validation-hallucination-missing-diameter-0",
+      "jaccard": 0.8055555555555556
+    },
+    {
+      "a": "train-hallucination-missing-price-2",
+      "b": "heldout-hallucination-missing-license-0",
+      "jaccard": 0.8055555555555556
+    },
+    {
+      "a": "train-hallucination-missing-author-0",
+      "b": "validation-hallucination-missing-origin-0",
+      "jaccard": 0.8611111111111112
+    },
+    {
+      "a": "train-hallucination-missing-author-0",
+      "b": "heldout-hallucination-missing-power-0",
+      "jaccard": 0.8857142857142857
+    },
+    {
+      "a": "train-hallucination-missing-author-3",
+      "b": "heldout-hallucination-missing-power-0",
+      "jaccard": 0.8055555555555556
+    },
+    {
+      "a": "train-hallucination-missing-battery-0",
+      "b": "validation-hallucination-missing-expiry-0",
+      "jaccard": 0.8378378378378378
+    },
+    {
+      "a": "train-hallucination-missing-battery-0",
+      "b": "heldout-hallucination-missing-coordinate-0",
+      "jaccard": 0.8611111111111112
+    },
+    {
+      "a": "validation-hallucination-missing-warranty-0",
+      "b": "heldout-hallucination-missing-serial-0",
+      "jaccard": 0.8333333333333334
+    },
+    {
+      "a": "validation-hallucination-missing-postal-0",
+      "b": "heldout-hallucination-missing-calibration-0",
+      "jaccard": 0.8378378378378378
+    },
+    {
+      "a": "validation-hallucination-missing-diameter-0",
+      "b": "heldout-hallucination-missing-license-0",
+      "jaccard": 0.8857142857142857
+    },
+    {
+      "a": "validation-hallucination-missing-origin-0",
+      "b": "heldout-hallucination-missing-power-0",
+      "jaccard": 0.8611111111111112
+    },
+    {
+      "a": "validation-hallucination-missing-expiry-0",
+      "b": "heldout-hallucination-missing-coordinate-0",
+      "jaccard": 0.8611111111111112
+    },
+    {
+      "a": "train-sources-conflict-колір покриття-0",
+      "b": "validation-sources-conflict-висота опори-0",
+      "jaccard": 0.8888888888888888
+    },
+    {
+      "a": "train-sources-conflict-колір покриття-0",
+      "b": "heldout-sources-conflict-напруга живлення-0",
+      "jaccard": 0.8888888888888888
+    },
+    {
+      "a": "train-sources-conflict-кількість полиць-0",
+      "b": "validation-sources-conflict-глибина каналу-0",
+      "jaccard": 0.8888888888888888
+    },
+    {
+      "a": "train-sources-conflict-кількість полиць-0",
+      "b": "heldout-sources-conflict-тиск у камері-0",
+      "jaccard": 0.8888888888888888
+    },
+    {
+      "a": "train-sources-conflict-кількість полиць-2",
+      "b": "heldout-sources-conflict-кількість обертів-0",
+      "jaccard": 0.8378378378378378
+    },
+    {
+      "a": "train-sources-conflict-кількість полиць-3",
+      "b": "validation-sources-conflict-дата огляду-0",
+      "jaccard": 0.8108108108108109
+    },
+    {
+      "a": "train-sources-conflict-номер секції-0",
+      "b": "validation-sources-conflict-час прибуття-0",
+      "jaccard": 0.8888888888888888
+    },
+    {
+      "a": "train-sources-conflict-номер секції-0",
+      "b": "heldout-sources-conflict-довжина кабелю-0",
+      "jaccard": 0.8888888888888888
+    },
+    {
+      "a": "train-sources-conflict-номер секції-2",
+      "b": "validation-sources-conflict-дата огляду-0",
+      "jaccard": 0.8108108108108109
+    },
+    {
+      "a": "train-sources-conflict-назва кімнати-0",
+      "b": "validation-sources-conflict-маса вантажу-0",
+      "jaccard": 0.8888888888888888
+    },
+    {
+      "a": "train-sources-conflict-назва кімнати-0",
+      "b": "heldout-sources-conflict-кількість обертів-0",
+      "jaccard": 0.8888888888888888
+    },
+    {
+      "a": "train-sources-conflict-назва кімнати-1",
+      "b": "validation-sources-conflict-дата огляду-0",
+      "jaccard": 0.8108108108108109
+    },
+    {
+      "a": "train-sources-conflict-статус заявки-0",
+      "b": "validation-sources-conflict-дата огляду-0",
+      "jaccard": 0.9142857142857143
+    },
+    {
+      "a": "train-sources-conflict-статус заявки-0",
+      "b": "heldout-sources-conflict-адреса вигаданого складу-0",
+      "jaccard": 0.8648648648648649
+    },
+    {
+      "a": "validation-sources-conflict-висота опори-0",
+      "b": "heldout-sources-conflict-напруга живлення-0",
+      "jaccard": 0.8888888888888888
+    },
+    {
+      "a": "validation-sources-conflict-глибина каналу-0",
+      "b": "heldout-sources-conflict-тиск у камері-0",
+      "jaccard": 0.8888888888888888
+    },
+    {
+      "a": "validation-sources-conflict-час прибуття-0",
+      "b": "heldout-sources-conflict-довжина кабелю-0",
+      "jaccard": 0.8888888888888888
+    },
+    {
+      "a": "validation-sources-conflict-маса вантажу-0",
+      "b": "heldout-sources-conflict-кількість обертів-0",
+      "jaccard": 0.8888888888888888
+    },
+    {
+      "a": "validation-sources-conflict-дата огляду-0",
+      "b": "heldout-sources-conflict-адреса вигаданого складу-0",
+      "jaccard": 0.8888888888888888
+    },
+    {
+      "a": "train-tools-tool-schema-find_note-0",
+      "b": "validation-tools-tool-schema-lookup_room-0",
+      "jaccard": 0.8378378378378378
+    },
+    {
+      "a": "train-tools-tool-schema-find_note-0",
+      "b": "heldout-tools-tool-schema-get_sample-0",
+      "jaccard": 0.8378378378378378
+    },
+    {
+      "a": "train-tools-tool-schema-read_card-0",
+      "b": "validation-tools-tool-schema-find_label-0",
+      "jaccard": 0.8378378378378378
+    },
+    {
+      "a": "train-tools-tool-schema-read_card-0",
+      "b": "heldout-tools-tool-schema-find_route-0",
+      "jaccard": 0.8378378378378378
+    },
+    {
+      "a": "train-tools-tool-schema-count_items-0",
+      "b": "validation-tools-tool-schema-inspect_batch-0",
+      "jaccard": 0.8378378378378378
+    },
+    {
+      "a": "train-tools-tool-schema-count_items-0",
+      "b": "heldout-tools-tool-schema-read_ledger-0",
+      "jaccard": 0.8378378378378378
+    },
+    {
+      "a": "train-tools-tool-schema-lookup_word-0",
+      "b": "validation-tools-tool-schema-query_catalog-0",
+      "jaccard": 0.8378378378378378
+    },
+    {
+      "a": "train-tools-tool-schema-lookup_word-0",
+      "b": "heldout-tools-tool-schema-lookup_module-0",
+      "jaccard": 0.8378378378378378
+    },
+    {
+      "a": "train-tools-tool-schema-show_status-0",
+      "b": "validation-tools-tool-schema-get_revision-0",
+      "jaccard": 0.8378378378378378
+    },
+    {
+      "a": "train-tools-tool-schema-show_status-0",
+      "b": "heldout-tools-tool-schema-inspect_ticket-0",
+      "jaccard": 0.8378378378378378
+    },
+    {
+      "a": "validation-tools-tool-schema-lookup_room-0",
+      "b": "heldout-tools-tool-schema-get_sample-0",
+      "jaccard": 0.8378378378378378
+    },
+    {
+      "a": "validation-tools-tool-schema-find_label-0",
+      "b": "heldout-tools-tool-schema-find_route-0",
+      "jaccard": 0.8378378378378378
+    },
+    {
+      "a": "validation-tools-tool-schema-inspect_batch-0",
+      "b": "heldout-tools-tool-schema-read_ledger-0",
+      "jaccard": 0.8378378378378378
+    },
+    {
+      "a": "validation-tools-tool-schema-query_catalog-0",
+      "b": "heldout-tools-tool-schema-lookup_module-0",
+      "jaccard": 0.8378378378378378
+    },
+    {
+      "a": "validation-tools-tool-schema-get_revision-0",
+      "b": "heldout-tools-tool-schema-inspect_ticket-0",
+      "jaccard": 0.8378378378378378
+    },
+    {
+      "a": "validation-security-injection-encoded-role-0",
+      "b": "heldout-security-injection-assistant-prefill-0",
+      "jaccard": 0.8181818181818182
+    }
+  ],
+  "referenceChecks": 440,
+  "negativeChecks": 830,
+  "maxTokens": 268,
+  "tokenLengths": [
+    {
+      "id": "train-reasoning-bundle-remainder-0",
+      "tokens": 49
+    },
+    {
+      "id": "train-reasoning-bundle-remainder-1",
+      "tokens": 49
+    },
+    {
+      "id": "train-reasoning-bundle-remainder-2",
+      "tokens": 49
+    },
+    {
+      "id": "train-reasoning-bundle-remainder-3",
+      "tokens": 49
+    },
+    {
+      "id": "train-reasoning-integer-average-0",
+      "tokens": 37
+    },
+    {
+      "id": "train-reasoning-integer-average-1",
+      "tokens": 37
+    },
+    {
+      "id": "train-reasoning-integer-average-2",
+      "tokens": 37
+    },
+    {
+      "id": "train-reasoning-integer-average-3",
+      "tokens": 39
+    },
+    {
+      "id": "train-reasoning-perimeter-0",
+      "tokens": 46
+    },
+    {
+      "id": "train-reasoning-perimeter-1",
+      "tokens": 46
+    },
+    {
+      "id": "train-reasoning-perimeter-2",
+      "tokens": 46
+    },
+    {
+      "id": "train-reasoning-perimeter-3",
+      "tokens": 46
+    },
+    {
+      "id": "train-reasoning-parallel-workers-0",
+      "tokens": 57
+    },
+    {
+      "id": "train-reasoning-parallel-workers-1",
+      "tokens": 57
+    },
+    {
+      "id": "train-reasoning-parallel-workers-2",
+      "tokens": 57
+    },
+    {
+      "id": "train-reasoning-parallel-workers-3",
+      "tokens": 57
+    },
+    {
+      "id": "train-reasoning-inventory-return-0",
+      "tokens": 44
+    },
+    {
+      "id": "train-reasoning-inventory-return-1",
+      "tokens": 44
+    },
+    {
+      "id": "train-reasoning-inventory-return-2",
+      "tokens": 44
+    },
+    {
+      "id": "train-reasoning-inventory-return-3",
+      "tokens": 44
+    },
+    {
+      "id": "validation-reasoning-two-stage-discount-0",
+      "tokens": 61
+    },
+    {
+      "id": "validation-reasoning-clock-rollover-0",
+      "tokens": 50
+    },
+    {
+      "id": "validation-reasoning-strict-order-0",
+      "tokens": 45
+    },
+    {
+      "id": "validation-reasoning-remainder-0",
+      "tokens": 49
+    },
+    {
+      "id": "validation-reasoning-ratio-share-0",
+      "tokens": 48
+    },
+    {
+      "id": "heldout-reasoning-round-trip-0",
+      "tokens": 61
+    },
+    {
+      "id": "heldout-reasoning-inclusion-exclusion-0",
+      "tokens": 58
+    },
+    {
+      "id": "heldout-reasoning-dependency-chain-0",
+      "tokens": 71
+    },
+    {
+      "id": "heldout-reasoning-reverse-operation-0",
+      "tokens": 50
+    },
+    {
+      "id": "heldout-reasoning-conditional-counterexample-0",
+      "tokens": 70
+    },
+    {
+      "id": "train-code-py-sum-0",
+      "tokens": 28
+    },
+    {
+      "id": "train-code-py-sum-1",
+      "tokens": 29
+    },
+    {
+      "id": "train-code-py-sum-2",
+      "tokens": 29
+    },
+    {
+      "id": "train-code-py-sum-3",
+      "tokens": 29
+    },
+    {
+      "id": "train-code-py-dict-get-0",
+      "tokens": 31
+    },
+    {
+      "id": "train-code-py-dict-get-1",
+      "tokens": 31
+    },
+    {
+      "id": "train-code-py-dict-get-2",
+      "tokens": 31
+    },
+    {
+      "id": "train-code-py-dict-get-3",
+      "tokens": 31
+    },
+    {
+      "id": "train-code-js-reduce-0",
+      "tokens": 36
+    },
+    {
+      "id": "train-code-js-reduce-1",
+      "tokens": 36
+    },
+    {
+      "id": "train-code-js-reduce-2",
+      "tokens": 36
+    },
+    {
+      "id": "train-code-js-reduce-3",
+      "tokens": 37
+    },
+    {
+      "id": "train-code-py-list-concat-0",
+      "tokens": 29
+    },
+    {
+      "id": "train-code-py-list-concat-1",
+      "tokens": 29
+    },
+    {
+      "id": "train-code-py-list-concat-2",
+      "tokens": 29
+    },
+    {
+      "id": "train-code-py-list-concat-3",
+      "tokens": 29
+    },
+    {
+      "id": "train-code-js-string-repeat-0",
+      "tokens": 27
+    },
+    {
+      "id": "train-code-js-string-repeat-1",
+      "tokens": 27
+    },
+    {
+      "id": "train-code-js-string-repeat-2",
+      "tokens": 27
+    },
+    {
+      "id": "train-code-js-string-repeat-3",
+      "tokens": 27
+    },
+    {
+      "id": "validation-code-py-floor-0",
+      "tokens": 25
+    },
+    {
+      "id": "validation-code-js-nullish-0",
+      "tokens": 24
+    },
+    {
+      "id": "validation-code-py-negative-index-0",
+      "tokens": 29
+    },
+    {
+      "id": "validation-code-js-short-circuit-0",
+      "tokens": 23
+    },
+    {
+      "id": "validation-code-py-range-step-0",
+      "tokens": 38
+    },
+    {
+      "id": "heldout-code-py-nested-comprehension-0",
+      "tokens": 40
+    },
+    {
+      "id": "heldout-code-js-map-filter-0",
+      "tokens": 43
+    },
+    {
+      "id": "heldout-code-py-mutable-alias-0",
+      "tokens": 37
+    },
+    {
+      "id": "heldout-code-js-postincrement-0",
+      "tokens": 33
+    },
+    {
+      "id": "heldout-code-py-recursion-0",
+      "tokens": 50
+    },
+    {
+      "id": "train-memory-memory-direct-two-0",
+      "tokens": 110
+    },
+    {
+      "id": "train-memory-memory-direct-two-1",
+      "tokens": 110
+    },
+    {
+      "id": "train-memory-memory-direct-two-2",
+      "tokens": 110
+    },
+    {
+      "id": "train-memory-memory-direct-two-3",
+      "tokens": 110
+    },
+    {
+      "id": "train-memory-memory-paragraph-four-0",
+      "tokens": 160
+    },
+    {
+      "id": "train-memory-memory-paragraph-four-1",
+      "tokens": 160
+    },
+    {
+      "id": "train-memory-memory-paragraph-four-2",
+      "tokens": 160
+    },
+    {
+      "id": "train-memory-memory-paragraph-four-3",
+      "tokens": 160
+    },
+    {
+      "id": "train-memory-memory-table-six-0",
+      "tokens": 203
+    },
+    {
+      "id": "train-memory-memory-table-six-1",
+      "tokens": 203
+    },
+    {
+      "id": "train-memory-memory-table-six-2",
+      "tokens": 203
+    },
+    {
+      "id": "train-memory-memory-table-six-3",
+      "tokens": 203
+    },
+    {
+      "id": "train-memory-memory-list-eight-0",
+      "tokens": 243
+    },
+    {
+      "id": "train-memory-memory-list-eight-1",
+      "tokens": 243
+    },
+    {
+      "id": "train-memory-memory-list-eight-2",
+      "tokens": 243
+    },
+    {
+      "id": "train-memory-memory-list-eight-3",
+      "tokens": 243
+    },
+    {
+      "id": "train-memory-memory-mixed-script-eight-0",
+      "tokens": 257
+    },
+    {
+      "id": "train-memory-memory-mixed-script-eight-1",
+      "tokens": 257
+    },
+    {
+      "id": "train-memory-memory-mixed-script-eight-2",
+      "tokens": 257
+    },
+    {
+      "id": "train-memory-memory-mixed-script-eight-3",
+      "tokens": 257
+    },
+    {
+      "id": "validation-memory-memory-entity-selection-0",
+      "tokens": 122
+    },
+    {
+      "id": "validation-memory-memory-key-allowlist-0",
+      "tokens": 167
+    },
+    {
+      "id": "validation-memory-memory-nested-record-0",
+      "tokens": 194
+    },
+    {
+      "id": "validation-memory-memory-dated-snapshot-0",
+      "tokens": 255
+    },
+    {
+      "id": "validation-memory-memory-join-halves-0",
+      "tokens": 235
+    },
+    {
+      "id": "heldout-memory-memory-update-one-retain-rest-0",
+      "tokens": 130
+    },
+    {
+      "id": "heldout-memory-memory-confirmed-over-draft-0",
+      "tokens": 188
+    },
+    {
+      "id": "heldout-memory-memory-irrelevant-turn-retention-0",
+      "tokens": 211
+    },
+    {
+      "id": "heldout-memory-memory-similar-entity-isolation-0",
+      "tokens": 268
+    },
+    {
+      "id": "heldout-memory-memory-undo-one-retain-seven-0",
+      "tokens": 257
+    },
+    {
+      "id": "train-knowledge-grounding-shelf-0",
+      "tokens": 94
+    },
+    {
+      "id": "train-knowledge-grounding-shelf-1",
+      "tokens": 108
+    },
+    {
+      "id": "train-knowledge-grounding-shelf-2",
+      "tokens": 110
+    },
+    {
+      "id": "train-knowledge-grounding-shelf-3",
+      "tokens": 108
+    },
+    {
+      "id": "train-knowledge-grounding-paint-0",
+      "tokens": 98
+    },
+    {
+      "id": "train-knowledge-grounding-paint-1",
+      "tokens": 112
+    },
+    {
+      "id": "train-knowledge-grounding-paint-2",
+      "tokens": 114
+    },
+    {
+      "id": "train-knowledge-grounding-paint-3",
+      "tokens": 112
+    },
+    {
+      "id": "train-knowledge-grounding-capacity-0",
+      "tokens": 96
+    },
+    {
+      "id": "train-knowledge-grounding-capacity-1",
+      "tokens": 110
+    },
+    {
+      "id": "train-knowledge-grounding-capacity-2",
+      "tokens": 112
+    },
+    {
+      "id": "train-knowledge-grounding-capacity-3",
+      "tokens": 110
+    },
+    {
+      "id": "train-knowledge-grounding-opening-0",
+      "tokens": 100
+    },
+    {
+      "id": "train-knowledge-grounding-opening-1",
+      "tokens": 114
+    },
+    {
+      "id": "train-knowledge-grounding-opening-2",
+      "tokens": 116
+    },
+    {
+      "id": "train-knowledge-grounding-opening-3",
+      "tokens": 114
+    },
+    {
+      "id": "train-knowledge-grounding-material-0",
+      "tokens": 96
+    },
+    {
+      "id": "train-knowledge-grounding-material-1",
+      "tokens": 110
+    },
+    {
+      "id": "train-knowledge-grounding-material-2",
+      "tokens": 112
+    },
+    {
+      "id": "train-knowledge-grounding-material-3",
+      "tokens": 110
+    },
+    {
+      "id": "validation-knowledge-grounding-pressure-0",
+      "tokens": 95
+    },
+    {
+      "id": "validation-knowledge-grounding-distance-0",
+      "tokens": 96
+    },
+    {
+      "id": "validation-knowledge-grounding-height-0",
+      "tokens": 94
+    },
+    {
+      "id": "validation-knowledge-grounding-frequency-0",
+      "tokens": 98
+    },
+    {
+      "id": "validation-knowledge-grounding-duration-0",
+      "tokens": 99
+    },
+    {
+      "id": "heldout-knowledge-grounding-storage-limit-0",
+      "tokens": 104
+    },
+    {
+      "id": "heldout-knowledge-grounding-release-gate-0",
+      "tokens": 106
+    },
+    {
+      "id": "heldout-knowledge-grounding-dependency-0",
+      "tokens": 108
+    },
+    {
+      "id": "heldout-knowledge-grounding-temperature-0",
+      "tokens": 102
+    },
+    {
+      "id": "heldout-knowledge-grounding-exception-0",
+      "tokens": 103
+    },
+    {
+      "id": "train-context-latest-color-0",
+      "tokens": 51
+    },
+    {
+      "id": "train-context-latest-color-1",
+      "tokens": 51
+    },
+    {
+      "id": "train-context-latest-color-2",
+      "tokens": 51
+    },
+    {
+      "id": "train-context-latest-color-3",
+      "tokens": 51
+    },
+    {
+      "id": "train-context-cancelled-name-0",
+      "tokens": 56
+    },
+    {
+      "id": "train-context-cancelled-name-1",
+      "tokens": 56
+    },
+    {
+      "id": "train-context-cancelled-name-2",
+      "tokens": 56
+    },
+    {
+      "id": "train-context-cancelled-name-3",
+      "tokens": 56
+    },
+    {
+      "id": "train-context-quoted-vs-request-0",
+      "tokens": 51
+    },
+    {
+      "id": "train-context-quoted-vs-request-1",
+      "tokens": 51
+    },
+    {
+      "id": "train-context-quoted-vs-request-2",
+      "tokens": 51
+    },
+    {
+      "id": "train-context-quoted-vs-request-3",
+      "tokens": 51
+    },
+    {
+      "id": "train-context-specific-over-default-0",
+      "tokens": 48
+    },
+    {
+      "id": "train-context-specific-over-default-1",
+      "tokens": 48
+    },
+    {
+      "id": "train-context-specific-over-default-2",
+      "tokens": 48
+    },
+    {
+      "id": "train-context-specific-over-default-3",
+      "tokens": 48
+    },
+    {
+      "id": "train-context-correction-0",
+      "tokens": 49
+    },
+    {
+      "id": "train-context-correction-1",
+      "tokens": 49
+    },
+    {
+      "id": "train-context-correction-2",
+      "tokens": 49
+    },
+    {
+      "id": "train-context-correction-3",
+      "tokens": 49
+    },
+    {
+      "id": "validation-context-scope-room-0",
+      "tokens": 52
+    },
+    {
+      "id": "validation-context-draft-final-0",
+      "tokens": 52
+    },
+    {
+      "id": "validation-context-hypothetical-0",
+      "tokens": 57
+    },
+    {
+      "id": "validation-context-two-users-0",
+      "tokens": 55
+    },
+    {
+      "id": "validation-context-undo-0",
+      "tokens": 51
+    },
+    {
+      "id": "heldout-context-conditional-override-0",
+      "tokens": 56
+    },
+    {
+      "id": "heldout-context-version-branch-0",
+      "tokens": 53
+    },
+    {
+      "id": "heldout-context-expired-setting-0",
+      "tokens": 57
+    },
+    {
+      "id": "heldout-context-explicit-unset-0",
+      "tokens": 52
+    },
+    {
+      "id": "heldout-context-priority-rule-0",
+      "tokens": 67
+    },
+    {
+      "id": "train-ukrainian-participles-0",
+      "tokens": 46
+    },
+    {
+      "id": "train-ukrainian-participles-1",
+      "tokens": 46
+    },
+    {
+      "id": "train-ukrainian-participles-2",
+      "tokens": 46
+    },
+    {
+      "id": "train-ukrainian-participles-3",
+      "tokens": 46
+    },
+    {
+      "id": "train-ukrainian-calque-take-part-0",
+      "tokens": 50
+    },
+    {
+      "id": "train-ukrainian-calque-take-part-1",
+      "tokens": 50
+    },
+    {
+      "id": "train-ukrainian-calque-take-part-2",
+      "tokens": 52
+    },
+    {
+      "id": "train-ukrainian-calque-take-part-3",
+      "tokens": 50
+    },
+    {
+      "id": "train-ukrainian-according-to-0",
+      "tokens": 46
+    },
+    {
+      "id": "train-ukrainian-according-to-1",
+      "tokens": 47
+    },
+    {
+      "id": "train-ukrainian-according-to-2",
+      "tokens": 46
+    },
+    {
+      "id": "train-ukrainian-according-to-3",
+      "tokens": 49
+    },
+    {
+      "id": "train-ukrainian-thanks-dative-0",
+      "tokens": 43
+    },
+    {
+      "id": "train-ukrainian-thanks-dative-1",
+      "tokens": 45
+    },
+    {
+      "id": "train-ukrainian-thanks-dative-2",
+      "tokens": 46
+    },
+    {
+      "id": "train-ukrainian-thanks-dative-3",
+      "tokens": 48
+    },
+    {
+      "id": "train-ukrainian-superlative-0",
+      "tokens": 45
+    },
+    {
+      "id": "train-ukrainian-superlative-1",
+      "tokens": 45
+    },
+    {
+      "id": "train-ukrainian-superlative-2",
+      "tokens": 44
+    },
+    {
+      "id": "train-ukrainian-superlative-3",
+      "tokens": 44
+    },
+    {
+      "id": "train-ukrainian-vocative-0",
+      "tokens": 48
+    },
+    {
+      "id": "train-ukrainian-vocative-1",
+      "tokens": 49
+    },
+    {
+      "id": "train-ukrainian-vocative-2",
+      "tokens": 49
+    },
+    {
+      "id": "train-ukrainian-vocative-3",
+      "tokens": 50
+    },
+    {
+      "id": "train-ukrainian-apostrophe-0",
+      "tokens": 45
+    },
+    {
+      "id": "train-ukrainian-apostrophe-1",
+      "tokens": 47
+    },
+    {
+      "id": "train-ukrainian-apostrophe-2",
+      "tokens": 46
+    },
+    {
+      "id": "train-ukrainian-apostrophe-3",
+      "tokens": 48
+    },
+    {
+      "id": "train-ukrainian-numeral-two-0",
+      "tokens": 42
+    },
+    {
+      "id": "train-ukrainian-numeral-two-1",
+      "tokens": 42
+    },
+    {
+      "id": "train-ukrainian-numeral-two-2",
+      "tokens": 44
+    },
+    {
+      "id": "train-ukrainian-numeral-two-3",
+      "tokens": 42
+    },
+    {
+      "id": "train-ukrainian-not-word-0",
+      "tokens": 44
+    },
+    {
+      "id": "train-ukrainian-not-word-1",
+      "tokens": 46
+    },
+    {
+      "id": "train-ukrainian-not-word-2",
+      "tokens": 46
+    },
+    {
+      "id": "train-ukrainian-not-word-3",
+      "tokens": 48
+    },
+    {
+      "id": "train-ukrainian-on-request-0",
+      "tokens": 49
+    },
+    {
+      "id": "train-ukrainian-on-request-1",
+      "tokens": 47
+    },
+    {
+      "id": "train-ukrainian-on-request-2",
+      "tokens": 45
+    },
+    {
+      "id": "train-ukrainian-on-request-3",
+      "tokens": 45
+    },
+    {
+      "id": "validation-ukrainian-address-0",
+      "tokens": 50
+    },
+    {
+      "id": "validation-ukrainian-during-week-0",
+      "tokens": 47
+    },
+    {
+      "id": "validation-ukrainian-in-conclusion-0",
+      "tokens": 49
+    },
+    {
+      "id": "validation-ukrainian-coincide-0",
+      "tokens": 47
+    },
+    {
+      "id": "validation-ukrainian-cancel-0",
+      "tokens": 47
+    },
+    {
+      "id": "heldout-ukrainian-exception-word-0",
+      "tokens": 45
+    },
+    {
+      "id": "heldout-ukrainian-event-take-place-0",
+      "tokens": 50
+    },
+    {
+      "id": "heldout-ukrainian-regard-as-0",
+      "tokens": 48
+    },
+    {
+      "id": "heldout-ukrainian-consist-of-0",
+      "tokens": 55
+    },
+    {
+      "id": "heldout-ukrainian-relative-to-0",
+      "tokens": 47
+    },
+    {
+      "id": "train-russian-ru-agreement-0-0",
+      "tokens": 37
+    },
+    {
+      "id": "train-russian-ru-agreement-0-1",
+      "tokens": 37
+    },
+    {
+      "id": "train-russian-ru-agreement-0-2",
+      "tokens": 36
+    },
+    {
+      "id": "train-russian-ru-agreement-0-3",
+      "tokens": 38
+    },
+    {
+      "id": "train-russian-ru-agreement-1-0",
+      "tokens": 37
+    },
+    {
+      "id": "train-russian-ru-agreement-1-1",
+      "tokens": 38
+    },
+    {
+      "id": "train-russian-ru-agreement-1-2",
+      "tokens": 38
+    },
+    {
+      "id": "train-russian-ru-agreement-1-3",
+      "tokens": 36
+    },
+    {
+      "id": "train-russian-ru-agreement-2-0",
+      "tokens": 37
+    },
+    {
+      "id": "train-russian-ru-agreement-2-1",
+      "tokens": 38
+    },
+    {
+      "id": "train-russian-ru-agreement-2-2",
+      "tokens": 38
+    },
+    {
+      "id": "train-russian-ru-agreement-2-3",
+      "tokens": 37
+    },
+    {
+      "id": "train-russian-ru-agreement-3-0",
+      "tokens": 36
+    },
+    {
+      "id": "train-russian-ru-agreement-3-1",
+      "tokens": 36
+    },
+    {
+      "id": "train-russian-ru-agreement-3-2",
+      "tokens": 36
+    },
+    {
+      "id": "train-russian-ru-agreement-3-3",
+      "tokens": 36
+    },
+    {
+      "id": "train-russian-ru-agreement-4-0",
+      "tokens": 41
+    },
+    {
+      "id": "train-russian-ru-agreement-4-1",
+      "tokens": 40
+    },
+    {
+      "id": "train-russian-ru-agreement-4-2",
+      "tokens": 39
+    },
+    {
+      "id": "train-russian-ru-agreement-4-3",
+      "tokens": 39
+    },
+    {
+      "id": "validation-russian-ru-comparative-0",
+      "tokens": 36
+    },
+    {
+      "id": "validation-russian-ru-preposition-0",
+      "tokens": 39
+    },
+    {
+      "id": "validation-russian-ru-verb-0",
+      "tokens": 37
+    },
+    {
+      "id": "validation-russian-ru-plural-0",
+      "tokens": 37
+    },
+    {
+      "id": "validation-russian-ru-soft-0",
+      "tokens": 38
+    },
+    {
+      "id": "heldout-russian-ru-both-0",
+      "tokens": 41
+    },
+    {
+      "id": "heldout-russian-ru-participle-0",
+      "tokens": 39
+    },
+    {
+      "id": "heldout-russian-ru-count-0",
+      "tokens": 46
+    },
+    {
+      "id": "heldout-russian-ru-after-0",
+      "tokens": 40
+    },
+    {
+      "id": "heldout-russian-ru-hyphen-0",
+      "tokens": 41
+    },
+    {
+      "id": "train-english-en-rule-0-0",
+      "tokens": 35
+    },
+    {
+      "id": "train-english-en-rule-0-1",
+      "tokens": 35
+    },
+    {
+      "id": "train-english-en-rule-0-2",
+      "tokens": 35
+    },
+    {
+      "id": "train-english-en-rule-0-3",
+      "tokens": 35
+    },
+    {
+      "id": "train-english-en-rule-1-0",
+      "tokens": 29
+    },
+    {
+      "id": "train-english-en-rule-1-1",
+      "tokens": 29
+    },
+    {
+      "id": "train-english-en-rule-1-2",
+      "tokens": 29
+    },
+    {
+      "id": "train-english-en-rule-1-3",
+      "tokens": 29
+    },
+    {
+      "id": "train-english-en-rule-2-0",
+      "tokens": 29
+    },
+    {
+      "id": "train-english-en-rule-2-1",
+      "tokens": 29
+    },
+    {
+      "id": "train-english-en-rule-2-2",
+      "tokens": 29
+    },
+    {
+      "id": "train-english-en-rule-2-3",
+      "tokens": 29
+    },
+    {
+      "id": "train-english-en-rule-3-0",
+      "tokens": 33
+    },
+    {
+      "id": "train-english-en-rule-3-1",
+      "tokens": 33
+    },
+    {
+      "id": "train-english-en-rule-3-2",
+      "tokens": 33
+    },
+    {
+      "id": "train-english-en-rule-3-3",
+      "tokens": 35
+    },
+    {
+      "id": "train-english-en-rule-4-0",
+      "tokens": 35
+    },
+    {
+      "id": "train-english-en-rule-4-1",
+      "tokens": 35
+    },
+    {
+      "id": "train-english-en-rule-4-2",
+      "tokens": 35
+    },
+    {
+      "id": "train-english-en-rule-4-3",
+      "tokens": 35
+    },
+    {
+      "id": "validation-english-en-irregular-0",
+      "tokens": 30
+    },
+    {
+      "id": "validation-english-en-much-0",
+      "tokens": 29
+    },
+    {
+      "id": "validation-english-en-do-0",
+      "tokens": 35
+    },
+    {
+      "id": "validation-english-en-adverb-0",
+      "tokens": 33
+    },
+    {
+      "id": "validation-english-en-negative-0",
+      "tokens": 35
+    },
+    {
+      "id": "heldout-english-en-relative-0",
+      "tokens": 33
+    },
+    {
+      "id": "heldout-english-en-perfect-0",
+      "tokens": 35
+    },
+    {
+      "id": "heldout-english-en-less-0",
+      "tokens": 30
+    },
+    {
+      "id": "heldout-english-en-possessive-0",
+      "tokens": 37
+    },
+    {
+      "id": "heldout-english-en-conditional-0",
+      "tokens": 33
+    },
+    {
+      "id": "train-json-json-string-0",
+      "tokens": 56
+    },
+    {
+      "id": "train-json-json-string-1",
+      "tokens": 56
+    },
+    {
+      "id": "train-json-json-string-2",
+      "tokens": 56
+    },
+    {
+      "id": "train-json-json-string-3",
+      "tokens": 56
+    },
+    {
+      "id": "train-json-json-integer-0",
+      "tokens": 50
+    },
+    {
+      "id": "train-json-json-integer-1",
+      "tokens": 50
+    },
+    {
+      "id": "train-json-json-integer-2",
+      "tokens": 50
+    },
+    {
+      "id": "train-json-json-integer-3",
+      "tokens": 50
+    },
+    {
+      "id": "train-json-json-boolean-0",
+      "tokens": 58
+    },
+    {
+      "id": "train-json-json-boolean-1",
+      "tokens": 58
+    },
+    {
+      "id": "train-json-json-boolean-2",
+      "tokens": 58
+    },
+    {
+      "id": "train-json-json-boolean-3",
+      "tokens": 58
+    },
+    {
+      "id": "train-json-json-array-0",
+      "tokens": 55
+    },
+    {
+      "id": "train-json-json-array-1",
+      "tokens": 55
+    },
+    {
+      "id": "train-json-json-array-2",
+      "tokens": 55
+    },
+    {
+      "id": "train-json-json-array-3",
+      "tokens": 55
+    },
+    {
+      "id": "train-json-json-null-0",
+      "tokens": 58
+    },
+    {
+      "id": "train-json-json-null-1",
+      "tokens": 58
+    },
+    {
+      "id": "train-json-json-null-2",
+      "tokens": 58
+    },
+    {
+      "id": "train-json-json-null-3",
+      "tokens": 58
+    },
+    {
+      "id": "validation-json-json-nested-0",
+      "tokens": 68
+    },
+    {
+      "id": "validation-json-json-empty-list-0",
+      "tokens": 48
+    },
+    {
+      "id": "validation-json-json-decimal-0",
+      "tokens": 56
+    },
+    {
+      "id": "validation-json-json-quoted-string-0",
+      "tokens": 62
+    },
+    {
+      "id": "validation-json-json-zero-string-0",
+      "tokens": 58
+    },
+    {
+      "id": "heldout-json-json-nested-array-0",
+      "tokens": 72
+    },
+    {
+      "id": "heldout-json-json-unicode-keys-0",
+      "tokens": 74
+    },
+    {
+      "id": "heldout-json-json-escaped-newline-0",
+      "tokens": 56
+    },
+    {
+      "id": "heldout-json-json-mixed-types-0",
+      "tokens": 63
+    },
+    {
+      "id": "heldout-json-json-empty-map-0",
+      "tokens": 49
+    },
+    {
+      "id": "train-hallucination-missing-maker-0",
+      "tokens": 91
+    },
+    {
+      "id": "train-hallucination-missing-maker-1",
+      "tokens": 91
+    },
+    {
+      "id": "train-hallucination-missing-maker-2",
+      "tokens": 91
+    },
+    {
+      "id": "train-hallucination-missing-maker-3",
+      "tokens": 91
+    },
+    {
+      "id": "train-hallucination-missing-weight-0",
+      "tokens": 90
+    },
+    {
+      "id": "train-hallucination-missing-weight-1",
+      "tokens": 90
+    },
+    {
+      "id": "train-hallucination-missing-weight-2",
+      "tokens": 90
+    },
+    {
+      "id": "train-hallucination-missing-weight-3",
+      "tokens": 90
+    },
+    {
+      "id": "train-hallucination-missing-price-0",
+      "tokens": 90
+    },
+    {
+      "id": "train-hallucination-missing-price-1",
+      "tokens": 90
+    },
+    {
+      "id": "train-hallucination-missing-price-2",
+      "tokens": 90
+    },
+    {
+      "id": "train-hallucination-missing-price-3",
+      "tokens": 90
+    },
+    {
+      "id": "train-hallucination-missing-author-0",
+      "tokens": 90
+    },
+    {
+      "id": "train-hallucination-missing-author-1",
+      "tokens": 90
+    },
+    {
+      "id": "train-hallucination-missing-author-2",
+      "tokens": 90
+    },
+    {
+      "id": "train-hallucination-missing-author-3",
+      "tokens": 90
+    },
+    {
+      "id": "train-hallucination-missing-battery-0",
+      "tokens": 92
+    },
+    {
+      "id": "train-hallucination-missing-battery-1",
+      "tokens": 92
+    },
+    {
+      "id": "train-hallucination-missing-battery-2",
+      "tokens": 92
+    },
+    {
+      "id": "train-hallucination-missing-battery-3",
+      "tokens": 92
+    },
+    {
+      "id": "validation-hallucination-missing-warranty-0",
+      "tokens": 94
+    },
+    {
+      "id": "validation-hallucination-missing-postal-0",
+      "tokens": 93
+    },
+    {
+      "id": "validation-hallucination-missing-diameter-0",
+      "tokens": 91
+    },
+    {
+      "id": "validation-hallucination-missing-origin-0",
+      "tokens": 93
+    },
+    {
+      "id": "validation-hallucination-missing-expiry-0",
+      "tokens": 92
+    },
+    {
+      "id": "heldout-hallucination-missing-serial-0",
+      "tokens": 93
+    },
+    {
+      "id": "heldout-hallucination-missing-calibration-0",
+      "tokens": 94
+    },
+    {
+      "id": "heldout-hallucination-missing-license-0",
+      "tokens": 93
+    },
+    {
+      "id": "heldout-hallucination-missing-power-0",
+      "tokens": 93
+    },
+    {
+      "id": "heldout-hallucination-missing-coordinate-0",
+      "tokens": 92
+    },
+    {
+      "id": "train-sources-conflict-колір покриття-0",
+      "tokens": 137
+    },
+    {
+      "id": "train-sources-conflict-колір покриття-1",
+      "tokens": 137
+    },
+    {
+      "id": "train-sources-conflict-колір покриття-2",
+      "tokens": 137
+    },
+    {
+      "id": "train-sources-conflict-колір покриття-3",
+      "tokens": 137
+    },
+    {
+      "id": "train-sources-conflict-кількість полиць-0",
+      "tokens": 137
+    },
+    {
+      "id": "train-sources-conflict-кількість полиць-1",
+      "tokens": 137
+    },
+    {
+      "id": "train-sources-conflict-кількість полиць-2",
+      "tokens": 137
+    },
+    {
+      "id": "train-sources-conflict-кількість полиць-3",
+      "tokens": 137
+    },
+    {
+      "id": "train-sources-conflict-номер секції-0",
+      "tokens": 135
+    },
+    {
+      "id": "train-sources-conflict-номер секції-1",
+      "tokens": 135
+    },
+    {
+      "id": "train-sources-conflict-номер секції-2",
+      "tokens": 135
+    },
+    {
+      "id": "train-sources-conflict-номер секції-3",
+      "tokens": 135
+    },
+    {
+      "id": "train-sources-conflict-назва кімнати-0",
+      "tokens": 137
+    },
+    {
+      "id": "train-sources-conflict-назва кімнати-1",
+      "tokens": 137
+    },
+    {
+      "id": "train-sources-conflict-назва кімнати-2",
+      "tokens": 137
+    },
+    {
+      "id": "train-sources-conflict-назва кімнати-3",
+      "tokens": 137
+    },
+    {
+      "id": "train-sources-conflict-статус заявки-0",
+      "tokens": 136
+    },
+    {
+      "id": "train-sources-conflict-статус заявки-1",
+      "tokens": 136
+    },
+    {
+      "id": "train-sources-conflict-статус заявки-2",
+      "tokens": 136
+    },
+    {
+      "id": "train-sources-conflict-статус заявки-3",
+      "tokens": 136
+    },
+    {
+      "id": "validation-sources-conflict-висота опори-0",
+      "tokens": 137
+    },
+    {
+      "id": "validation-sources-conflict-глибина каналу-0",
+      "tokens": 136
+    },
+    {
+      "id": "validation-sources-conflict-час прибуття-0",
+      "tokens": 136
+    },
+    {
+      "id": "validation-sources-conflict-маса вантажу-0",
+      "tokens": 137
+    },
+    {
+      "id": "validation-sources-conflict-дата огляду-0",
+      "tokens": 136
+    },
+    {
+      "id": "heldout-sources-conflict-напруга живлення-0",
+      "tokens": 137
+    },
+    {
+      "id": "heldout-sources-conflict-тиск у камері-0",
+      "tokens": 137
+    },
+    {
+      "id": "heldout-sources-conflict-довжина кабелю-0",
+      "tokens": 136
+    },
+    {
+      "id": "heldout-sources-conflict-кількість обертів-0",
+      "tokens": 138
+    },
+    {
+      "id": "heldout-sources-conflict-адреса вигаданого складу-0",
+      "tokens": 139
+    },
+    {
+      "id": "train-tools-tool-schema-find_note-0",
+      "tokens": 98
+    },
+    {
+      "id": "train-tools-tool-schema-find_note-1",
+      "tokens": 98
+    },
+    {
+      "id": "train-tools-tool-schema-find_note-2",
+      "tokens": 98
+    },
+    {
+      "id": "train-tools-tool-schema-find_note-3",
+      "tokens": 98
+    },
+    {
+      "id": "train-tools-tool-schema-read_card-0",
+      "tokens": 102
+    },
+    {
+      "id": "train-tools-tool-schema-read_card-1",
+      "tokens": 102
+    },
+    {
+      "id": "train-tools-tool-schema-read_card-2",
+      "tokens": 102
+    },
+    {
+      "id": "train-tools-tool-schema-read_card-3",
+      "tokens": 102
+    },
+    {
+      "id": "train-tools-tool-schema-count_items-0",
+      "tokens": 98
+    },
+    {
+      "id": "train-tools-tool-schema-count_items-1",
+      "tokens": 98
+    },
+    {
+      "id": "train-tools-tool-schema-count_items-2",
+      "tokens": 98
+    },
+    {
+      "id": "train-tools-tool-schema-count_items-3",
+      "tokens": 98
+    },
+    {
+      "id": "train-tools-tool-schema-lookup_word-0",
+      "tokens": 98
+    },
+    {
+      "id": "train-tools-tool-schema-lookup_word-1",
+      "tokens": 98
+    },
+    {
+      "id": "train-tools-tool-schema-lookup_word-2",
+      "tokens": 98
+    },
+    {
+      "id": "train-tools-tool-schema-lookup_word-3",
+      "tokens": 98
+    },
+    {
+      "id": "train-tools-tool-schema-show_status-0",
+      "tokens": 98
+    },
+    {
+      "id": "train-tools-tool-schema-show_status-1",
+      "tokens": 98
+    },
+    {
+      "id": "train-tools-tool-schema-show_status-2",
+      "tokens": 98
+    },
+    {
+      "id": "train-tools-tool-schema-show_status-3",
+      "tokens": 98
+    },
+    {
+      "id": "validation-tools-tool-schema-lookup_room-0",
+      "tokens": 102
+    },
+    {
+      "id": "validation-tools-tool-schema-find_label-0",
+      "tokens": 98
+    },
+    {
+      "id": "validation-tools-tool-schema-inspect_batch-0",
+      "tokens": 102
+    },
+    {
+      "id": "validation-tools-tool-schema-query_catalog-0",
+      "tokens": 98
+    },
+    {
+      "id": "validation-tools-tool-schema-get_revision-0",
+      "tokens": 98
+    },
+    {
+      "id": "heldout-tools-tool-schema-get_sample-0",
+      "tokens": 104
+    },
+    {
+      "id": "heldout-tools-tool-schema-find_route-0",
+      "tokens": 104
+    },
+    {
+      "id": "heldout-tools-tool-schema-read_ledger-0",
+      "tokens": 104
+    },
+    {
+      "id": "heldout-tools-tool-schema-lookup_module-0",
+      "tokens": 104
+    },
+    {
+      "id": "heldout-tools-tool-schema-inspect_ticket-0",
+      "tokens": 104
+    },
+    {
+      "id": "train-security-injection-note-override-0",
+      "tokens": 80
+    },
+    {
+      "id": "train-security-injection-note-override-1",
+      "tokens": 80
+    },
+    {
+      "id": "train-security-injection-note-override-2",
+      "tokens": 80
+    },
+    {
+      "id": "train-security-injection-note-override-3",
+      "tokens": 80
+    },
+    {
+      "id": "train-security-injection-fake-system-0",
+      "tokens": 74
+    },
+    {
+      "id": "train-security-injection-fake-system-1",
+      "tokens": 74
+    },
+    {
+      "id": "train-security-injection-fake-system-2",
+      "tokens": 74
+    },
+    {
+      "id": "train-security-injection-fake-system-3",
+      "tokens": 74
+    },
+    {
+      "id": "train-security-injection-reward-0",
+      "tokens": 81
+    },
+    {
+      "id": "train-security-injection-reward-1",
+      "tokens": 81
+    },
+    {
+      "id": "train-security-injection-reward-2",
+      "tokens": 81
+    },
+    {
+      "id": "train-security-injection-reward-3",
+      "tokens": 81
+    },
+    {
+      "id": "train-security-injection-tool-result-0",
+      "tokens": 80
+    },
+    {
+      "id": "train-security-injection-tool-result-1",
+      "tokens": 80
+    },
+    {
+      "id": "train-security-injection-tool-result-2",
+      "tokens": 80
+    },
+    {
+      "id": "train-security-injection-tool-result-3",
+      "tokens": 80
+    },
+    {
+      "id": "train-security-injection-quoted-command-0",
+      "tokens": 75
+    },
+    {
+      "id": "train-security-injection-quoted-command-1",
+      "tokens": 75
+    },
+    {
+      "id": "train-security-injection-quoted-command-2",
+      "tokens": 75
+    },
+    {
+      "id": "train-security-injection-quoted-command-3",
+      "tokens": 75
+    },
+    {
+      "id": "validation-security-injection-fake-developer-0",
+      "tokens": 76
+    },
+    {
+      "id": "validation-security-injection-urgent-0",
+      "tokens": 80
+    },
+    {
+      "id": "validation-security-injection-encoded-role-0",
+      "tokens": 74
+    },
+    {
+      "id": "validation-security-injection-permission-forgery-0",
+      "tokens": 81
+    },
+    {
+      "id": "validation-security-injection-grading-threat-0",
+      "tokens": 80
+    },
+    {
+      "id": "heldout-security-injection-nested-document-0",
+      "tokens": 80
+    },
+    {
+      "id": "heldout-security-injection-translation-smuggle-0",
+      "tokens": 74
+    },
+    {
+      "id": "heldout-security-injection-assistant-prefill-0",
+      "tokens": 75
+    },
+    {
+      "id": "heldout-security-injection-browser-banner-0",
+      "tokens": 77
+    },
+    {
+      "id": "heldout-security-injection-citation-instruction-0",
+      "tokens": 79
+    },
+    {
+      "id": "train-style-layout-bullet-two-0",
+      "tokens": 65
+    },
+    {
+      "id": "train-style-layout-bullet-two-1",
+      "tokens": 73
+    },
+    {
+      "id": "train-style-layout-bullet-two-2",
+      "tokens": 73
+    },
+    {
+      "id": "train-style-layout-bullet-two-3",
+      "tokens": 73
+    },
+    {
+      "id": "train-style-layout-number-two-0",
+      "tokens": 73
+    },
+    {
+      "id": "train-style-layout-number-two-1",
+      "tokens": 81
+    },
+    {
+      "id": "train-style-layout-number-two-2",
+      "tokens": 81
+    },
+    {
+      "id": "train-style-layout-number-two-3",
+      "tokens": 81
+    },
+    {
+      "id": "train-style-layout-line-two-0",
+      "tokens": 60
+    },
+    {
+      "id": "train-style-layout-line-two-1",
+      "tokens": 68
+    },
+    {
+      "id": "train-style-layout-line-two-2",
+      "tokens": 68
+    },
+    {
+      "id": "train-style-layout-line-two-3",
+      "tokens": 68
+    },
+    {
+      "id": "train-style-layout-semicolon-0",
+      "tokens": 59
+    },
+    {
+      "id": "train-style-layout-semicolon-1",
+      "tokens": 67
+    },
+    {
+      "id": "train-style-layout-semicolon-2",
+      "tokens": 67
+    },
+    {
+      "id": "train-style-layout-semicolon-3",
+      "tokens": 67
+    },
+    {
+      "id": "train-style-layout-heading-0",
+      "tokens": 42
+    },
+    {
+      "id": "train-style-layout-heading-1",
+      "tokens": 46
+    },
+    {
+      "id": "train-style-layout-heading-2",
+      "tokens": 46
+    },
+    {
+      "id": "train-style-layout-heading-3",
+      "tokens": 46
+    },
+    {
+      "id": "validation-style-layout-dash-two-0",
+      "tokens": 69
+    },
+    {
+      "id": "validation-style-layout-colon-0",
+      "tokens": 49
+    },
+    {
+      "id": "validation-style-layout-comma-0",
+      "tokens": 54
+    },
+    {
+      "id": "validation-style-layout-parentheses-0",
+      "tokens": 55
+    },
+    {
+      "id": "validation-style-layout-arrow-0",
+      "tokens": 56
+    },
+    {
+      "id": "heldout-style-layout-slash-0",
+      "tokens": 48
+    },
+    {
+      "id": "heldout-style-layout-pipe-0",
+      "tokens": 50
+    },
+    {
+      "id": "heldout-style-layout-number-three-0",
+      "tokens": 91
+    },
+    {
+      "id": "heldout-style-layout-bracket-0",
+      "tokens": 48
+    },
+    {
+      "id": "heldout-style-layout-one-line-0",
+      "tokens": 55
+    }
+  ],
+  "limitation": "Authored family assignment and lexical audit, not a proof against all semantic leakage. Shared task contracts are intentional. No independent human review claimed."
+}

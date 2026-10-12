@@ -167,6 +167,12 @@ async fn core_command(
 ) -> Result<Value, String> {
     main_only(&window)?;
     if ![
+        "voice.status",
+        "voice.settings",
+        "voice.transcribe",
+        "voice.speak",
+        "voice.cancel",
+        "voice.diagnostics",
         "ai.internet",
         "ai.internetPlan",
         "ai.internetSettings",

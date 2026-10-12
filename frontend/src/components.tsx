@@ -1,5 +1,6 @@
 import {
   MessageSquare,
+  Mic,
   Folder,
   FileText,
   Brain,
@@ -340,6 +341,7 @@ export function Files() {
 
 const iconFamily = {
   chat: MessageSquare,
+  mic: Mic,
   folder: Folder,
   file: FileText,
   memory: Brain,

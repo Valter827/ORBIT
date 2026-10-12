@@ -44,9 +44,14 @@ test("v051 future vision interfaces do not register executable host methods", as
   const workspace = path.join(base, "project");
   await fs.mkdir(workspace);
   await host.request("configure", { workspace, stateDirectory: path.join(base, "state") });
-  for (const method of ["screen.capture", "computer.execute", "application.launch", "voice.transcribe"])
+  for (const method of ["screen.capture", "computer.execute", "application.launch"])
     await assert.rejects(
       host.request(method, { kind: "launch", applicationId: "calculator" }),
       /Unknown desktop operation/,
     );
+  // v0.11 registers Voice, but malformed/unapproved audio never invokes a provider.
+  await assert.rejects(
+    host.request("voice.transcribe", { kind: "launch", applicationId: "calculator" }),
+    /permission|Required/,
+  );
 });

@@ -1,0 +1,12 @@
+{
+  "release": "0.10.2.1",
+  "name": "COSMO Dataset v1.1 & Alpha Training Preparation",
+  "applicationBaseVersion": "0.10.2",
+  "dataset": "cosmo-dataset-v1.1",
+  "evaluation": "cosmo-alpha-eval-v1.1",
+  "sourceArchive": "ORBIT-0.10.2-real-training-source-20261011.zip",
+  "sourceArchiveSha256": "f0423431e7a1f285db54bc585bde663a6af070946319759ec1e00e0c0f5a1019",
+  "nativeInstallerProduced": false,
+  "productionRolesChanged": false,
+  "alphaCreated": false
+}

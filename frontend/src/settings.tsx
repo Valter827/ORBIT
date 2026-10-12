@@ -1,4 +1,5 @@
 import { InternetPreferences } from "./browser";
+import { VoiceSettingsPanel } from "./voice-settings";
 import { intelligenceDefaults, type Intelligence } from "./ai-types";
 import { profileStatus } from "./ai-types";
 import { LocalModels } from "./local-models";
@@ -287,6 +288,7 @@ export function SettingsPanel({
     "Appearance",
     "AI & Models",
     "Local AI",
+    "Voice",
     "Internet & Browser",
     "Sense",
     "Agent & Permissions",
@@ -311,6 +313,7 @@ export function SettingsPanel({
                       Appearance: "appearance",
                       "AI & Models": "star",
                       "Local AI": "local",
+                      Voice: "mic",
                       Sense: "sense",
                       "Internet & Browser": "browser",
                       "Agent & Permissions": "verified",
@@ -329,6 +332,12 @@ export function SettingsPanel({
         </nav>
         <section className="settings-content">
           <h2>{section}</h2>
+          {section === "Voice" && (
+            <VoiceSettingsPanel
+              conflicts={[draft.shortcut, draft.paletteShortcut, draft.settingsShortcut, draft.newTaskShortcut]}
+              onChat={() => onNavigate("Chat")}
+            />
+          )}
           {section === "General" && (
             <>
               <label>

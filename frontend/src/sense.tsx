@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { VoiceControls } from "./voice";
 import { core, native, errorText } from "./api";
 import { Button, ErrorNotice } from "./components";
 import type { AIState } from "./ai-types";
@@ -35,6 +36,7 @@ export function SensePanel({
   const [session, setSession] = useState<Session>();
   const [snapshot, setSnapshot] = useState<Snapshot>();
   const [answer, setAnswer] = useState<Answer>();
+  const [voiceAnswerId, setVoiceAnswerId] = useState("");
   const [question, setQuestion] = useState(initialQuestion || "What am I looking at?");
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
@@ -133,16 +135,25 @@ export function SensePanel({
         setAcknowledged("");
       }
     });
-  const ask = () =>
-    run("Analyzing with " + profile.name + "…", async (current) => {
+  const askQuestion = async (text: string) => {
+    if (!session || !snapshot || (remote && acknowledged !== destination) || busy) return false;
+    let accepted = false;
+    await run("Analyzing with " + profile.name + "…", async (current) => {
       const result = await command<Answer>("ask", {
         sessionId: session?.sessionId,
-        question,
+        question: text,
         acknowledgedDestination: acknowledged,
         includeImage,
       });
-      if (current()) setAnswer(result);
+      if (current()) {
+        setAnswer(result);
+        setVoiceAnswerId(crypto.randomUUID());
+        accepted = true;
+      }
     });
+    return accepted;
+  };
+  const ask = () => askQuestion(question);
   const selected = scope === "display" ? choices.displays : choices.windows;
   return (
     <section className="sense-panel card" aria-label="ORBIT Sense">
@@ -189,6 +200,17 @@ export function SensePanel({
       <p className="muted">
         Screen contents stay temporary. Sense reads and advises; it cannot click, type, scroll or launch applications.
       </p>
+      {session && snapshot && (
+        <VoiceControls
+          key={String(session.sessionId)}
+          visible
+          busy={!!busy}
+          response={answer ? { id: voiceAnswerId, text: answer.text, running: false } : undefined}
+          send={askQuestion}
+          stopModel={stop}
+          setup={() => setError("Open Settings → Voice to configure local speech.")}
+        />
+      )}
       {onboarded && profile.senseEnabled && (
         <>
           {session ? (

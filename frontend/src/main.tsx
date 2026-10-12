@@ -481,6 +481,10 @@ function App() {
                     onLocalSetup={() => setLocalSetup(true)}
                     onSense={() => setMode("Sense")}
                     onProject={() => setPage("Projects")}
+                    onVoiceSettings={() => {
+                      setSettingsSection("Voice");
+                      setPage("Settings");
+                    }}
                     onSettings={() => {
                       setSettingsSection("AI & Models");
                       setPage("Settings");

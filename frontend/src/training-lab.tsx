@@ -211,6 +211,10 @@ function Lab() {
   const active = state.jobs.some((j) => ["Preparing", "Ready", "Training", "Evaluating"].includes(j.state));
   return (
     <div className="training-lab">
+      <p role="status">
+        COSMO Dataset v1.1 is preserved. The local Alpha experiment is paused: Windows Application Control blocks the
+        approved NumPy training module. Voice uses the existing COSMO roles and does not resume training.
+      </p>
       {deleteId && (
         <div role="alertdialog" aria-label="Confirm adapter deletion" className="panel training-card">
           <h3>Delete this adapter?</h3>

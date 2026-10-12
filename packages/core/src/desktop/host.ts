@@ -1,4 +1,5 @@
 import { sanitizeSense } from "../sense/session.js";
+import { VoiceService } from "../voice/service.js";
 import { AIHub, ProviderConfiguration, validateProviders } from "./ai-hub.js";
 import { createInterface } from "node:readline";
 import { fileURLToPath } from "node:url";
@@ -31,6 +32,7 @@ export function createDesktopHost(notify: (topic: string, payload: unknown) => v
     shuttingDown = false;
   let provider: AIProvider;
   let hub: AIHub | undefined, preparing: AbortController | undefined;
+  let voice: VoiceService | undefined;
   let preparingDone: Promise<unknown> | undefined;
   let cancelledSenseEpoch = -1,
     activeSenseEpoch: number | undefined;
@@ -65,6 +67,7 @@ export function createDesktopHost(notify: (topic: string, payload: unknown) => v
         await service?.shutdown();
         store ??= new DesktopStore(path.join(next.stateDirectory, "database"));
         hub ??= new AIHub(next.stateDirectory, notify);
+        voice ??= new VoiceService(next.stateDirectory);
         hub.configure(
           next.providers.length
             ? next.providers
@@ -89,6 +92,16 @@ export function createDesktopHost(notify: (topic: string, payload: unknown) => v
       }
     }
     if (!config || !store) throw new Error("Core has not initialized");
+    if (method.startsWith("voice.")) {
+      if (method === "voice.cancel") return voice!.cancel();
+      const localOnly = (await hub!.state()).localOnly;
+      if (method === "voice.status") return voice!.status(localOnly);
+      if (method === "voice.settings") return voice!.save(value);
+      if (method === "voice.transcribe") return voice!.transcribe(value, localOnly);
+      if (method === "voice.speak") return voice!.speak(value, localOnly);
+      if (method === "voice.diagnostics") return voice!.diagnostics;
+      throw new Error("Unknown Voice operation");
+    }
     if (method === "status") {
       const status = service
         ? await service.status()
@@ -255,6 +268,7 @@ export function createDesktopHost(notify: (topic: string, payload: unknown) => v
       return { connected: true };
     }
     if (method === "shutdown") {
+      voice?.cancel();
       shuttingDown = true;
       preparing?.abort();
       await preparingDone?.catch(() => {});
@@ -299,7 +313,7 @@ async function main() {
   // The only transport is inherited stdin/stdout; no HTTP server or listening port.
   const lines = createInterface({ input: process.stdin, crlfDelay: Infinity });
   lines.on("line", (line) => {
-    if (Buffer.byteLength(line) > 1100000) {
+    if (Buffer.byteLength(line) > 2800000) {
       send({ id: null, error: "Message too large" });
       return;
     }
@@ -311,6 +325,8 @@ async function main() {
           .strict()
           .parse(JSON.parse(line));
         id = input.id;
+        if (input.method !== "voice.transcribe" && Buffer.byteLength(line) > 1100000)
+          throw new Error("Message too large");
         const result = await host.request(input.method, input.params ?? {});
         send({ id, result });
       } catch (e) {

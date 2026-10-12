@@ -1,4 +1,5 @@
 import { SourceCards } from "./source-cards";
+import { VoiceControls } from "./voice";
 import { brainLabel, brainAliases, type BrainRole } from "../../packages/core/src/ai/brain-aliases";
 import type { PageContext } from "./browser";
 import { MemorySuggestions } from "./memory";
@@ -80,6 +81,7 @@ export function ChatPanel({
   onLocalSetup,
   onSense,
   onProject,
+  onVoiceSettings,
 }: {
   pageContext?: PageContext;
   onClearPage: () => void;
@@ -94,6 +96,7 @@ export function ChatPanel({
   onLocalSetup: () => void;
   onSense: () => void;
   onProject: () => void;
+  onVoiceSettings: () => void;
   ai: AIState;
   request: string;
   setRequest: (v: string) => void;
@@ -345,7 +348,7 @@ export function ChatPanel({
     };
   }, [id]);
   const send = async (text: string, regenerate = false, verify = false, webConsent = false) => {
-    if (active.current || !text.trim() || needsSetup || loadingHistory || !restored) return;
+    if (active.current || !text.trim() || needsSetup || loadingHistory || !restored) return false;
     active.current = true;
     setStarting(true);
     const selectedPage = pageContext?.profileId === ai.selected && !/https:\/\//i.test(text) ? pageContext : undefined;
@@ -392,9 +395,11 @@ export function ChatPanel({
       setRequest("");
       setGeneration(undefined);
       setId(response.id);
+      return true;
     } catch (e) {
       active.current = false;
       setError(errorText(e));
+      return false;
     } finally {
       setStarting(false);
     }
@@ -753,6 +758,22 @@ export function ChatPanel({
         </Modal>
       )}
       <MemorySuggestions revision={ai.selected + ":" + (generation?.running ? "running" : (generation?.id ?? ""))} />
+      <VoiceControls
+        key={ai.selected + ":" + workspace + ":" + newChatToken + ":" + openChat?.token}
+        visible={visible}
+        busy={busy}
+        response={generation}
+        send={async (text) => {
+          const draft = request;
+          const accepted = await send(text);
+          if (draft) setRequest(draft);
+          return accepted === true;
+        }}
+        stopModel={() => {
+          void core("chat.stop").catch((e) => setError(errorText(e)));
+        }}
+        setup={onVoiceSettings}
+      />
       <form
         className="chat-composer"
         onSubmit={(e) => {

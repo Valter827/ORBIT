@@ -1,0 +1,8 @@
+{
+  "audit.json": "c9324d89746a583b0a661abb9ebbc5a255c9e466ff3932cb420e2561ad76285f",
+  "DATASET-CARD.md": "29a170b61e161f77a6e79f1691f1f6b459a2a69085b22d4925e0ceddbb62d299",
+  "heldout.json": "c3398d3a791cd75797f0150973115697591f63158ebd6182972a838ade96d2f1",
+  "manifest.json": "f438fb456abcb5b0c4b6dad6811c6e2b495251e5f9b950b2eafb4d71a5d2db45",
+  "train.json": "0cd01099a8545c5db604ec6ac16acf2266adf7bd3680c281b20c3f6fd89a96ac",
+  "validation.json": "af3bff42651950096d9e0d5cd57acee43c1bec0d8ec6b10795d925932e0e7157"
+}

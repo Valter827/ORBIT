@@ -1,0 +1,12 @@
+{
+  "version": "cosmo-dataset-v1.1",
+  "suite": "cosmo-alpha-eval-v1.1",
+  "sha256": "26a2a994975fa9b8c141f06b47359fc7a31879a1091e9a22e5e10ded11869fd0",
+  "counts": {
+    "train": 300,
+    "validation": 70,
+    "heldout": 70
+  },
+  "source": "training/dataset_v11.py",
+  "privateData": false
+}
