@@ -1595,3 +1595,62 @@ small {
 .training-lab .training-card { padding: 20px; margin-bottom: .75rem; }
 .training-lab .training-card h3, .training-lab .training-card h4 { margin-top: 0; }
 .training-lab .training-grid { align-items: stretch; }
+/* Chat-first voice composer: a single surface, with optional context popovers. */
+.chat-first .unified-composer {
+  grid-template-columns: 36px minmax(0, 1fr) auto;
+  gap: 8px;
+  padding: 12px;
+  background: var(--bg-surface);
+  border-color: color-mix(in srgb, var(--accent) 22%, var(--border-default));
+  border-radius: 22px;
+  box-shadow: 0 8px 28px #0003;
+}
+.unified-composer > label { grid-column: 2 / -1; grid-row: 1; min-width: 0; }
+.chat-first .unified-composer #chat-request { min-height: 48px; padding: 8px 4px; }
+.chat-first .unified-composer > .intelligence-modes { grid-column: 2; grid-row: 2; gap: 6px; min-width: 0; }
+.unified-composer .intelligence-modes > select { font-size: 12px; max-width: 105px; min-height: 36px; }
+.unified-composer > .context-control { grid-column: 1; grid-row: 1; align-self: start; }
+.unified-composer > .context-control > summary { width: 34px; height: 34px; justify-content: center; border: 1px solid var(--border-default); border-radius: 50%; font-size: 24px; margin-top: 8px; }
+.unified-composer .brain-picker { position: relative; }
+.unified-composer .brain-picker summary { display: flex; padding: 8px; cursor: pointer; color: var(--text-muted); }
+.unified-composer .brain-picker[open] > label { display: block; position: absolute; bottom: 40px; left: 0; z-index: 8; padding: 12px; min-width: 190px; background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: 12px; }
+.unified-composer .brain-picker select { max-width: none; width: 100%; }
+.composer-voice { grid-column: 3; grid-row: 2; min-width: 0; }
+.composer-voice-actions { display: flex; align-items: center; gap: 6px; }
+.composer-voice-actions button { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; min-height: 36px; padding: 0; border-radius: 50%; background: transparent; color: var(--text-secondary); border: 1px solid transparent; }
+.composer-voice-actions .voice-orbit, .unified-composer .composer-primary { background: var(--accent-solid); color: var(--on-accent); border-radius: 50% !important; box-shadow: 0 2px 12px var(--accent-muted); }
+.composer-voice-actions .voice-orbit.secondary { background: var(--accent-muted); color: var(--accent); box-shadow: none; }
+.composer-voice-actions .is-active { outline: 2px solid var(--accent); outline-offset: 2px; }
+.composer-voice.voice-listening button:first-child { color: #ff727a; background: #ff727a18; border-color: #ff727a66; }
+.composer-voice.voice-speaking .voice-orbit svg { animation: voice-pulse 1.2s ease-in-out infinite; }
+.composer-voice .voice-state, .composer-voice > [role=alert] { position: absolute; bottom: 100%; right: 0; max-width: min(100%, 460px); background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: 10px; padding: 7px 10px; font-size: 12px; }
+.composer-voice > [role=alert] { color: var(--text-primary); margin: 4px 0; }
+.brain-banner { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 10px 12px; border: 1px solid var(--border-default); background: var(--bg-surface); border-radius: 12px; margin: 8px 0; font-size: 12px; }
+.brain-banner > div { flex: 1 1 240px; }
+.brain-banner strong, .brain-banner span { display: block; }
+.brain-banner span { color: var(--text-muted); margin-top: 3px; }
+.brain-banner button, .brain-send-notice button { font-size: 12px; padding: 6px 9px; }
+.brain-send-notice { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 8px; font-size: 12px; border-top: 1px solid var(--border-default); }
+.chat-regenerate { text-align: right; }
+@media (max-width: 600px) {
+  .chat-first .unified-composer { padding: 9px; gap: 5px; grid-template-columns: 30px minmax(0, 1fr) auto; }
+  .unified-composer > .context-control > summary { width: 28px; height: 28px; }
+  .chat-first .unified-composer > .intelligence-modes { grid-column: 1 / 3; gap: 2px; }
+  .composer-voice-actions { gap: 3px; }
+  .composer-voice-actions button { width: 32px; height: 32px; min-height: 32px; }
+  .brain-banner > div { flex-basis: 100%; }
+}
+@media (prefers-reduced-motion: reduce) { .composer-voice.voice-speaking .voice-orbit svg { animation: none; } }
+@media (max-width: 800px) {
+  .shell.chat-first { grid-template-columns: 60px minmax(0, 1fr); }
+  .chat-first .rail { flex-direction: column; align-items: stretch; padding: 64px 6px 12px; gap: 12px; }
+  .chat-first .rail nav { flex-direction: column; }
+  .chat-first .rail .brand, .chat-first .rail .rail-label { display: none; }
+  .chat-first .rail .navitem { justify-content: center; }
+  .chat-first .ai-selector { padding: 12px; }
+  .chat-first .header-controls { flex-wrap: wrap; }
+}
+.chat-first .unified-composer #chat-request { margin-top: 0; }
+.unified-composer .intelligence-modes select { margin-top: 0; }
+.unified-composer > label { margin: 0; }
+.composer-voice { padding: 0; margin: 0; border: 0; }

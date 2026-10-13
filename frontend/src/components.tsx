@@ -103,7 +103,7 @@ export function Modal({ title, children }: { title: string; children: React.Reac
         onKeyDown={(e) => {
           if (e.key === "Escape") {
             const cancel = [...(dialog.current?.querySelectorAll<HTMLButtonElement>("button") ?? [])].find((b) =>
-              /^(Close|Cancel|Not now|Got it)$/.test(b.textContent?.trim() ?? ""),
+              /^(Close|Cancel|Not now|Got it|Back to chat)$/.test(b.textContent?.trim() ?? ""),
             );
             if (cancel) {
               e.preventDefault();

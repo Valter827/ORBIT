@@ -57,7 +57,10 @@ jobs:
       - run: npm run check:release
       - name: Voice UI permission and cancellation fixtures (not native audio acceptance)
         shell: pwsh
-        run: node scripts/voice-ui-smoke.mjs
+        run: |
+          node scripts/voice-ui-smoke.mjs
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          node scripts/voice-composer-smoke.mjs
       - name: Current chat-first frontend smoke (fixture, not native AI)
         shell: pwsh
         run: node scripts/delivery-ui-smoke.mjs --visual --browser "$env:ProgramFiles/Google/Chrome/Application/chrome.exe"

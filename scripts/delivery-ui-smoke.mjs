@@ -63,7 +63,7 @@ const configure = () =>
 await configure();
 const bootstrapAI=await host.request("ai.state");
 const fixtureAgent=bootstrapAI.profiles.find(p=>p.builtin);
-await host.request("ai.saveProfile",{...fixtureAgent,providerId:chatFixture.provider.id,modelId:"polish-fixture",intelligence:{...fixtureAgent.intelligence,auto:false,web:"off"}});
+await host.request("ai.saveProfile",{...fixtureAgent,providerId:chatFixture.provider.id,modelId:"",intelligence:{...fixtureAgent.intelligence,auto:false,web:"off"}});
 await host.request("ai.models",{providerId:chatFixture.provider.id,refresh:true});
 const server = createServer((req, res) => {
   void (async () => {
@@ -95,7 +95,7 @@ const browser = await chromium.launch({
 const page = await browser.newPage({ viewport: { width: 1400, height: 900 } });
 const { capture, captures } = createVisualCapture(page, process.argv.includes("--visual"));
 const errors = [];
-let setupFixture=false;
+let setupFixture=true;
 page.on("pageerror", (error) => errors.push(error.message));
 await page.exposeFunction("orbitTestInvoke", async (cmd, args) => {
   if (cmd.startsWith("plugin:event|")) return 1;
@@ -137,6 +137,36 @@ try {
   await page.locator("#chat-request").waitFor();
   await page.waitForFunction(() => document.activeElement?.id === "chat-request");
   assert.equal(await page.getByRole("button", {name:"New chat",exact:true}).count(), 1);
+  const draft=page.locator("#chat-request");
+  await page.locator(".brain-banner").waitFor();
+  await draft.fill("Hello COSMO");
+  await page.getByRole("button",{name:"Send message",exact:true}).click();
+  await page.getByText("Choose a brain to send this message.",{exact:true}).waitFor();
+  assert.equal(await draft.inputValue(),"Hello COSMO");
+  assert.equal(chatFixture.requests(),0);
+  await page.getByRole("button",{name:"Dismiss brain status"}).click();
+  assert.equal(await page.locator(".brain-banner").count(),0);
+  await page.locator(".brain-send-notice").getByRole("button",{name:"Set up local",exact:true}).click();
+  await page.getByRole("dialog",{name:"Set up local AI",exact:true}).waitFor();
+  await page.getByRole("button",{name:"Back to chat",exact:true}).click();
+  assert.equal(await draft.inputValue(),"Hello COSMO");
+  await draft.press("End"); await draft.press("Shift+Enter"); await draft.pressSequentially("Привіт — Алекс 928");
+  const exactDraft=await draft.inputValue(); assert.equal(exactDraft,"Hello COSMO\nПривіт — Алекс 928");
+  await page.locator(".brain-send-notice").getByRole("button",{name:"Connect cloud",exact:true}).click();
+  await page.getByRole("navigation",{name:"Main navigation"}).getByRole("button",{name:"Chats",exact:true}).click();
+  assert.equal(await draft.inputValue(),exactDraft);
+  await page.getByRole("navigation",{name:"Main navigation"}).getByRole("button",{name:"Model Studio",exact:true}).click();
+  await page.getByRole("navigation",{name:"Main navigation"}).getByRole("button",{name:"Chats",exact:true}).click();
+  assert.equal(await draft.inputValue(),exactDraft);
+  await page.locator(".brain-send-notice").getByRole("button",{name:"Set up local",exact:true}).click();
+  await page.getByLabel("Installed models",{exact:true}).selectOption("polish-fixture");
+  await page.getByLabel("Confirm local inference",{exact:true}).check();
+  await page.getByRole("button",{name:"Test model",exact:true}).click();
+  await page.getByRole("dialog",{name:"Set up local AI",exact:true}).waitFor({state:"hidden"});
+  assert.equal(await draft.inputValue(),exactDraft);
+  await page.waitForFunction(()=>!document.querySelector(".brain-send-notice"));
+  for(const mode of ["fast","deep","balanced"]) { await page.getByRole("combobox",{name:"Intelligence mode",exact:true}).selectOption(mode); await page.waitForFunction(m=>document.querySelector('select[aria-label="Intelligence mode"]')?.value===m,mode); }
+  await draft.fill(""); await draft.focus();
   await capture("delivery-chat-first");
   await page.keyboard.type("Controlled delivery smoke");
   await page.keyboard.press("Enter");
@@ -148,9 +178,12 @@ try {
   
   await page.reload();
   await page.locator(".chat-message.assistant").filter({hasText:"Fixture response."}).waitFor();
-  for (const width of [1100,1440,1920]) {
-    await page.setViewportSize({width,height:900});
+  for (const width of [480,800,1100,1440,1920]) {
+    await page.setViewportSize({width,height:900}); await page.waitForTimeout(300);
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+    const composer=await page.locator(".unified-composer").boundingBox();
+    for (const selector of ["#chat-request", ".composer-voice-actions", ".intelligence-modes"]) { const box=await page.locator(selector).boundingBox(); assert.ok(box.x>=composer.x && box.x+box.width<=composer.x+composer.width+1,selector+" fits at "+width); }
+    await page.screenshot({path:"validation/composer-"+width+".png"});
     await capture("delivery-chat-"+width);
   }
   await page.getByRole("button",{name:"Settings",exact:true}).click();
@@ -161,7 +194,7 @@ try {
   assert.deepEqual(errors,[]);
   await fs.writeFile("validation/delivery-ui-smoke.json",JSON.stringify({
     status:"PASS",version:desktop.version,browser:browser.version(),fixture:true,nativeAcceptance:"NOT VERIFIED",
-    checks:["chat-first","composer-autofocus","keyboard-send","fixture-chat-markdown","reload-history","responsive-layout","about-version"],
+    checks:["chat-first","composer-autofocus","keyboard-send","fixture-chat-markdown","reload-history","responsive-layout","about-version","editable-no-brain","draft-setup-cloud-studio","dismiss-banner","setup-modal","configure-then-send","mode-selector","Shift+Enter"],
     captures
   },null,2));
   console.log("PASS: current chat-first frontend integration with fixture provider. Not real AI or native acceptance.");

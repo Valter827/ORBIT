@@ -372,20 +372,23 @@ function App() {
           {
             <div className="home-page" hidden={page !== "Home"}>
               {localSetup && ai && (
-                <LocalSetup
-                  key={ai.selected}
-                  ai={ai}
-                  refresh={refresh}
-                  onDone={() => {
-                    setLocalSetup(false);
-                    setMode("Chat");
-                    focusRequest();
-                  }}
-                  onAdvanced={() => {
-                    setLocalSetup(false);
-                    setPage("Settings");
-                  }}
-                />
+                <Modal title="Set up local AI">
+                  <Button onClick={() => setLocalSetup(false)}>Back to chat</Button>
+                  <LocalSetup
+                    key={ai.selected}
+                    ai={ai}
+                    refresh={refresh}
+                    onDone={() => {
+                      setLocalSetup(false);
+                      setMode("Chat");
+                      focusRequest();
+                    }}
+                    onAdvanced={() => {
+                      setLocalSetup(false);
+                      setPage("Settings");
+                    }}
+                  />
+                </Modal>
               )}
               {ai && (
                 <section className="ai-selector">
@@ -409,11 +412,15 @@ function App() {
                       </select>
                     </label>
                     <p className="header-status">
-                      {ai.providers.find((p) => p.id === ai.profiles.find((p) => p.id === ai.selected)?.providerId)
-                        ?.type === "local"
-                        ? "Local"
-                        : "Cloud"}{" "}
-                      · {brainLabel(ai.profiles.find((p) => p.id === ai.selected)?.intelligence)} ·{" "}
+                      {brainStatus !== "No active brain" && (
+                        <>
+                          {ai.providers.find((p) => p.id === ai.profiles.find((p) => p.id === ai.selected)?.providerId)
+                            ?.type === "local"
+                            ? "Local"
+                            : "Cloud"}{" "}
+                          · {brainLabel(ai.profiles.find((p) => p.id === ai.selected)?.intelligence)} ·{" "}
+                        </>
+                      )}
                       <Icon
                         name={
                           chatBusy

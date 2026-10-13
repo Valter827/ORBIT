@@ -1,5 +1,5 @@
 import { SourceCards } from "./source-cards";
-import { VoiceControls } from "./voice";
+import { VoiceControls, type VoiceComposerController } from "./voice";
 import { brainLabel, brainAliases, type BrainRole } from "../../packages/core/src/ai/brain-aliases";
 import type { PageContext } from "./browser";
 import { MemorySuggestions } from "./memory";
@@ -122,6 +122,9 @@ export function ChatPanel({
   const [starting, setStarting] = useState(false),
     [loadingHistory, setLoadingHistory] = useState(false),
     [attachedFiles, setAttachedFiles] = useState<string[]>([]);
+  const voiceController = useRef<VoiceComposerController | null>(null);
+  const [bannerDismissed, setBannerDismissed] = useState(false);
+  const [setupNotice, setSetupNotice] = useState(false);
   const [contextOpen, setContextOpen] = useState(false);
   const [webQuestion, setWebQuestion] = useState<string>();
   const [webPending, setWebPending] = useState<{ regenerate: boolean; verify: boolean }>();
@@ -161,6 +164,9 @@ export function ChatPanel({
     };
   }, [
     ai.selected,
+    ai.localOnly,
+    JSON.stringify(ai.profiles.find((p) => p.id === ai.selected)?.intelligence),
+    JSON.stringify(ai.providers.map((p) => [p.id, p.configured])),
     ai.profiles.find((p) => p.id === ai.selected)?.modelId,
     ai.profiles.find((p) => p.id === ai.selected)?.providerId,
   ]);
@@ -192,7 +198,13 @@ export function ChatPanel({
       setModeSaving(false);
     }
   };
-  const needsSetup = !profile || (!intelligence.auto && (!profile.modelId || !provider?.configured));
+  const needsSetup =
+    !profile ||
+    (!intelligence.auto && (!profile.modelId || !provider?.configured)) ||
+    ["Offline", "Model unavailable", "Needs setup"].includes(brain);
+  useEffect(() => {
+    if (!needsSetup) setSetupNotice(false);
+  }, [needsSetup]);
   const remember = (id: string) => {
     writePreference(storageKey, id);
     onActive(id);
@@ -233,7 +245,7 @@ export function ChatPanel({
     } finally {
       if (ticket === historyEpoch.current) {
         setLoadingHistory(false);
-        focusComposer(needsSetup);
+        focusComposer();
       }
     }
   };
@@ -241,7 +253,7 @@ export function ChatPanel({
     if (openChat) void openConversation(openChat.id);
   }, [openChat]);
   useEffect(() => {
-    if (visible && restored && !loadingHistory) focusComposer(needsSetup);
+    if (visible && restored && !loadingHistory) focusComposer();
   }, [visible, restored, loadingHistory, needsSetup, newChatToken, ai.selected]);
   useEffect(() => {
     const el = inputRef.current;
@@ -265,7 +277,7 @@ export function ChatPanel({
     setRequest("");
     setAttachedFiles([]);
     remember("");
-    focusComposer(needsSetup);
+    focusComposer();
   };
   useEffect(() => {
     const ticket = ++historyEpoch.current;
@@ -326,7 +338,7 @@ export function ChatPanel({
             finished = true;
             active.current = false;
             setId("");
-            focusComposer(needsSetup);
+            focusComposer();
             if (!g.error) setBrain("Ready");
             if (!g.error && g.intelligence?.pageContext) onPageContext(g.intelligence.pageContext);
             if (!g.error)
@@ -348,7 +360,12 @@ export function ChatPanel({
     };
   }, [id]);
   const send = async (text: string, regenerate = false, verify = false, webConsent = false) => {
-    if (active.current || !text.trim() || needsSetup || loadingHistory || !restored) return false;
+    if (active.current || !text.trim() || loadingHistory || !restored || selectedFiles.length > 5) return false;
+    if (needsSetup) {
+      setSetupNotice(true);
+      return false;
+    }
+    setSetupNotice(false);
     active.current = true;
     setStarting(true);
     const selectedPage = pageContext?.profileId === ai.selected && !/https:\/\//i.test(text) ? pageContext : undefined;
@@ -408,7 +425,7 @@ export function ChatPanel({
   useEffect(() => {
     onStatus(
       needsSetup
-        ? "Needs setup"
+        ? "No active brain"
         : brain === "Ready"
           ? "Ready"
           : brain === "Offline" || brain === "Model unavailable"
@@ -428,16 +445,17 @@ export function ChatPanel({
           Page context active: {pageContext.title} <Button onClick={onClearPage}>Remove page context</Button>
         </div>
       )}
-      {needsSetup && (
-        <div className="brain-setup">
-          <h3>{profile?.name ?? "Your AI"} needs a brain</h3>
-          <p>Set up a local AI to start chatting. No API key required.</p>
-          <div className="actions">
-            <Button id="chat-setup" onClick={onLocalSetup}>
-              Set Up Local AI
-            </Button>
-            <Button onClick={onSettings}>Connect Cloud AI</Button>
+      {needsSetup && !bannerDismissed && (
+        <div className="brain-banner" role="status">
+          <div>
+            <strong>COSMO has no active brain</strong>
+            <span>Set up a local or cloud model to send messages.</span>
           </div>
+          <Button onClick={onLocalSetup}>Set up local</Button>
+          <Button onClick={onSettings}>Connect cloud</Button>
+          <Button aria-label="Dismiss brain status" onClick={() => setBannerDismissed(true)}>
+            <Icon name="close" size={16} />
+          </Button>
         </div>
       )}
       {loadingHistory && <LoadingState label="Opening conversation…" />}
@@ -758,78 +776,67 @@ export function ChatPanel({
         </Modal>
       )}
       <MemorySuggestions revision={ai.selected + ":" + (generation?.running ? "running" : (generation?.id ?? ""))} />
-      <VoiceControls
-        key={ai.selected + ":" + workspace + ":" + newChatToken + ":" + openChat?.token}
-        visible={visible}
-        busy={busy}
-        response={generation}
-        send={async (text) => {
-          const draft = request;
-          const accepted = await send(text);
-          if (draft) setRequest(draft);
-          return accepted === true;
-        }}
-        stopModel={() => {
-          void core("chat.stop").catch((e) => setError(errorText(e)));
-        }}
-        setup={onVoiceSettings}
-      />
+      {!busy && last && messages.at(-1)?.role === "assistant" && (
+        <div className="chat-regenerate">
+          <Button onClick={() => void send(last, true)}>Regenerate</Button>
+        </div>
+      )}
       <form
-        className="chat-composer"
+        className="chat-composer unified-composer"
         onSubmit={(e) => {
           e.preventDefault();
-          void send(request);
+          void voiceController.current?.submit(request);
         }}
       >
         <div className="actions intelligence-modes" role="group" aria-label="Intelligence mode">
-          {(["fast", "balanced", "deep"] as const).map((mode) => (
-            <button
-              type="button"
-              key={mode}
-              aria-pressed={intelligence.mode === mode}
-              title={
-                { fast: "Quick response", balanced: "Best everyday mode", deep: "More analysis and verification" }[mode]
-              }
-              disabled={busy || modeSaving}
-              onClick={() => void saveIntelligence({ mode })}
-            >
-              <Icon name={mode} size={14} />
-              {mode[0].toUpperCase() + mode.slice(1)}
-            </button>
-          ))}
-          <label>
-            Brain{" "}
-            <select
-              aria-label="Brain selection"
-              value={intelligence.manualRole ?? (intelligence.auto ? "auto" : "manual")}
-              disabled={busy || modeSaving}
-              onChange={(e) =>
-                void saveIntelligence({
-                  auto: e.target.value !== "manual",
-                  manualRole: (Object.keys(brainAliases) as BrainRole[])
-                    .filter((r) => r !== "Embedding")
-                    .find((r) => r === e.target.value),
-                })
-              }
-            >
-              <option value="auto">Auto</option>
-              <option value="manual">Manual · advanced model</option>
-              {(Object.keys(brainAliases) as BrainRole[])
-                .filter((r) => r !== "Embedding")
-                .map((role) => (
-                  <option key={role} value={role} disabled={!intelligence.roles?.[role]}>
-                    {brainAliases[role]}
-                  </option>
-                ))}
-            </select>
-          </label>
+          <select
+            aria-label="Intelligence mode"
+            value={intelligence.mode}
+            disabled={busy || modeSaving}
+            onChange={(e) => void saveIntelligence({ mode: e.target.value as Intelligence["mode"] })}
+          >
+            <option value="fast">Fast</option>
+            <option value="balanced">Balanced</option>
+            <option value="deep">Deep</option>
+          </select>
+          <details className="brain-picker">
+            <summary title="Brain selection">
+              <Icon name="settings" size={16} />
+              <span className="sr-only">Brain selection</span>
+            </summary>
+            <label>
+              Brain{" "}
+              <select
+                aria-label="Brain selection"
+                value={intelligence.manualRole ?? (intelligence.auto ? "auto" : "manual")}
+                disabled={busy || modeSaving}
+                onChange={(e) =>
+                  void saveIntelligence({
+                    auto: e.target.value !== "manual",
+                    manualRole: (Object.keys(brainAliases) as BrainRole[])
+                      .filter((r) => r !== "Embedding")
+                      .find((r) => r === e.target.value),
+                  })
+                }
+              >
+                <option value="auto">Auto</option>
+                <option value="manual">Manual · advanced model</option>
+                {(Object.keys(brainAliases) as BrainRole[])
+                  .filter((r) => r !== "Embedding")
+                  .map((role) => (
+                    <option key={role} value={role} disabled={!intelligence.roles?.[role]}>
+                      {brainAliases[role]}
+                    </option>
+                  ))}
+              </select>
+            </label>
+          </details>
         </div>
         <label htmlFor="chat-request">
           <span className="sr-only">Ask {profile?.name ?? "ORBIT"}</span>
           <textarea
             id="chat-request"
             ref={inputRef}
-            disabled={needsSetup || !restored}
             aria-label={"Ask " + (profile?.name ?? "ORBIT")}
             value={request}
             onChange={(e) => {
@@ -840,7 +847,7 @@ export function ChatPanel({
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
                 e.preventDefault();
-                if (!busy) void send(request);
+                if (!busy) void voiceController.current?.submit(request);
               }
             }}
             maxLength={20000}
@@ -850,8 +857,8 @@ export function ChatPanel({
           />
         </label>
         <details className="context-control">
-          <summary>
-            <Icon name="attach" size={16} /> Add context
+          <summary aria-label="Add context" title="Attach files">
+            <span aria-hidden="true">+</span>
           </summary>
           <p className="path">{workspace ?? "Open a project to attach files."}</p>
           <label>
@@ -881,23 +888,31 @@ export function ChatPanel({
           </p>
           <Button onClick={onManage}>Manage knowledge</Button>
         </details>
-        <div className="actions">
-          {!busy && (
-            <button type="submit" disabled={needsSetup || !restored || !request.trim() || selectedFiles.length > 5}>
-              <Icon name="send" size={18} />
-              <span>Send message</span>
-            </button>
-          )}
-          {busy && (
-            <Button onClick={() => void core("chat.stop").catch((e) => setError(errorText(e)))}>
-              <Icon name="stop" size={16} />
-              Stop generating
-            </Button>
-          )}
-          {!busy && last && messages.at(-1)?.role === "assistant" && (
-            <Button onClick={() => void send(last, true)}>Regenerate</Button>
-          )}
-        </div>
+        <VoiceControls
+          compact
+          controller={voiceController}
+          draft={request}
+          onDraft={setRequest}
+          key={ai.selected + ":" + workspace + ":" + newChatToken + ":" + openChat?.token}
+          visible={visible}
+          busy={busy}
+          response={generation}
+          send={async (text) => {
+            const accepted = await send(text);
+            return accepted === true;
+          }}
+          stopModel={() => {
+            void core("chat.stop").catch((e) => setError(errorText(e)));
+          }}
+          setup={onVoiceSettings}
+        />
+        {setupNotice && (
+          <div className="brain-send-notice" role="alert">
+            <span>Choose a brain to send this message.</span>
+            <Button onClick={onLocalSetup}>Set up local</Button>
+            <Button onClick={onSettings}>Connect cloud</Button>
+          </div>
+        )}
         {selectedFiles.length > 5 && <p role="alert">Choose at most five files for this message.</p>}
         {selectedFiles.length > 0 && (
           <div className="context-chips">

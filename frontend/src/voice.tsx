@@ -1,12 +1,13 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type RefObject } from "react";
 import "./voice.css";
-import { Mic, MicOff, Volume2, Square } from "lucide-react";
+import { Mic, MicOff, Volume2, Square, AudioLines, ArrowUp, X } from "lucide-react";
 import { core, errorText } from "./api";
 import { Button, Modal } from "./components";
 import { MicrophoneCapture, bytesToBase64, voiceShortcut } from "./voice-audio";
 import type { VoicePhase, VoiceStatus } from "../../packages/core/src/voice/types";
 
 type Response = { id: string; text: string; running: boolean; error?: string };
+export type VoiceComposerController = { submit: (text: string) => Promise<void> };
 export function VoiceControls({
   visible,
   busy,
@@ -15,6 +16,10 @@ export function VoiceControls({
   stopModel,
   setup,
   testOnly = false,
+  compact = false,
+  controller,
+  draft = "",
+  onDraft,
 }: {
   visible: boolean;
   busy: boolean;
@@ -23,7 +28,14 @@ export function VoiceControls({
   stopModel: () => void;
   setup: () => void;
   testOnly?: boolean;
+  compact?: boolean;
+  controller?: RefObject<VoiceComposerController | null>;
+  draft?: string;
+  onDraft?: (text: string) => void;
 }) {
+  const draftBeforeVoice = useRef("");
+  const latestDraft = useRef(draft);
+  latestDraft.current = draft;
   const [status, setStatus] = useState<VoiceStatus>();
   const [phase, setPhase] = useState<VoicePhase>("idle"),
     [error, setError] = useState(""),
@@ -167,6 +179,30 @@ export function VoiceControls({
       setConsent(true);
     } else void begin();
   };
+  const submitText = async (text: string) => {
+    if (!text.trim() || busyRef.current || !["idle", "error", "review"].includes(currentPhase.current)) return;
+    const reviewedVoice = currentPhase.current === "review";
+    const ticket = epoch.current;
+    if (reviewedVoice) {
+      voiceTurn.current = true;
+      firstToken.current = false;
+      phaseTo("thinking");
+    }
+    const accepted = await send(text);
+    if (ticket !== epoch.current) {
+      if (accepted) stopModel();
+      return;
+    }
+    if (reviewedVoice) {
+      if (accepted) {
+        setTranscript("");
+      } else {
+        voiceTurn.current = false;
+        phaseTo("review");
+      }
+    }
+  };
+  if (controller) controller.current = { submit: submitText };
   const submit = async () => {
     if (!transcript.trim() || busyRef.current) return;
     const ticket = epoch.current;
@@ -207,6 +243,11 @@ export function VoiceControls({
       transcriptAt.current = performance.now();
       setMetrics((m) => ({ ...m, stopToTranscriptMs: performance.now() - at }));
       setTranscript(result.text);
+      if (compact) {
+        draftBeforeVoice.current = latestDraft.current;
+        if (status?.settings.behavior !== "auto")
+          onDraft?.(latestDraft.current ? latestDraft.current + "\n" + result.text : result.text);
+      }
       phaseTo("review");
       if (purpose.current === "chat" && status?.settings.behavior === "auto") {
         phaseTo("thinking");
@@ -221,8 +262,12 @@ export function VoiceControls({
         if (!accepted) {
           voiceTurn.current = false;
           phaseTo("review");
+          if (compact) onDraft?.(latestDraft.current ? latestDraft.current + "\n" + result.text : result.text);
           setError("Review the chat setup or Internet permission prompt before sending.");
-        } else setTranscript("");
+        } else {
+          setTranscript("");
+          if (compact && !latestDraft.current) onDraft?.(draftBeforeVoice.current);
+        }
       }
     } catch (e) {
       if (ticket === epoch.current) fail(e);
@@ -308,101 +353,173 @@ export function VoiceControls({
       removeEventListener("keyup", up);
     };
   }, [visible, testOnly]);
+  const working = busy || !["idle", "error", "review"].includes(phase);
+  const voiceMode = () => (continuous ? stop() : requestStart("chat", true));
   return (
-    <section className={"voice-controls voice-" + phase} aria-label="COSMO Voice">
-      <div className="actions">
-        {!testOnly && (
+    <section className={(compact ? "composer-voice " : "voice-controls ") + "voice-" + phase} aria-label="COSMO Voice">
+      {compact && (
+        <div className="composer-voice-actions">
           <button
             type="button"
-            aria-label={phase === "listening" ? "Stop recording and transcribe" : "Start microphone recording"}
-            title={"Push to talk · " + (status?.settings.shortcut ?? "Ctrl+Space")}
+            aria-label={phase === "listening" ? "Stop recording and transcribe" : "Voice input"}
+            title={"Voice input · " + (status?.settings.shortcut ?? "Ctrl+Shift+Space")}
             disabled={busy || !status || !["idle", "error", "review", "listening"].includes(phase)}
             onClick={() => (phase === "listening" ? void finish() : requestStart())}
           >
-            <Mic size={18} />
-            {phase === "listening" ? "Finish recording" : "Microphone"}
+            <Mic size={19} />
           </button>
-        )}
-        {!testOnly && (
           <button
             type="button"
+            className={"voice-orbit " + (continuous ? "is-active " : "") + (draft.trim() || working ? "secondary" : "")}
+            aria-label="Voice Mode"
             aria-pressed={continuous}
-            title="Visible conversation mode; microphone stops while COSMO speaks"
-            disabled={busy && !continuous}
-            onClick={() => (continuous ? stop() : requestStart("chat", true))}
+            title="Voice Mode"
+            disabled={working && !continuous}
+            onClick={voiceMode}
           >
-            Voice Mode {continuous ? "on" : "off"}
+            <AudioLines size={22} />
           </button>
-        )}
-        {testOnly && (
-          <>
-            <Button disabled={phase !== "idle" && phase !== "error"} onClick={() => requestStart("mic")}>
-              Test microphone
-            </Button>
-            <Button disabled={phase !== "idle" && phase !== "error"} onClick={() => requestStart("transcription")}>
-              Test transcription
-            </Button>
-            <Button
-              disabled={phase !== "idle" && phase !== "error"}
+          {response?.text && !working && (
+            <button
+              type="button"
+              aria-label="Read response aloud"
+              title="Read response aloud"
               onClick={() => {
                 turnStart.current = performance.now();
-                void speak(
-                  status?.settings.language === "en"
-                    ? "Hello, COSMO."
-                    : status?.settings.language === "uk"
-                      ? "Привіт, COSMO."
-                      : "Привет, COSMO.",
-                );
+                void speak(response.text);
               }}
             >
-              Test voice
+              <Volume2 size={17} />
+            </button>
+          )}
+          {working ? (
+            <button
+              type="button"
+              className="composer-primary"
+              aria-label="Stop"
+              title="Stop recording, transcription, generation and speech"
+              onClick={() => stop()}
+            >
+              <Square size={18} />
+            </button>
+          ) : draft.trim() ? (
+            <button type="submit" className="composer-primary" aria-label="Send message" title="Send message">
+              <ArrowUp size={21} />
+            </button>
+          ) : null}
+          {phase === "review" && (
+            <button
+              type="button"
+              aria-label="Discard voice transcript"
+              title="Restore draft before voice input"
+              onClick={() => {
+                onDraft?.(draftBeforeVoice.current);
+                setTranscript("");
+                stop(false);
+              }}
+            >
+              <X size={16} />
+            </button>
+          )}
+        </div>
+      )}
+      {!compact && (
+        <div className="actions">
+          {!testOnly && (
+            <button
+              type="button"
+              aria-label={phase === "listening" ? "Stop recording and transcribe" : "Start microphone recording"}
+              title={"Push to talk · " + (status?.settings.shortcut ?? "Ctrl+Space")}
+              disabled={busy || !status || !["idle", "error", "review", "listening"].includes(phase)}
+              onClick={() => (phase === "listening" ? void finish() : requestStart())}
+            >
+              <Mic size={18} />
+              {phase === "listening" ? "Finish recording" : "Microphone"}
+            </button>
+          )}
+          {!testOnly && (
+            <button
+              type="button"
+              aria-pressed={continuous}
+              title="Visible conversation mode; microphone stops while COSMO speaks"
+              disabled={busy && !continuous}
+              onClick={() => (continuous ? stop() : requestStart("chat", true))}
+            >
+              Voice Mode {continuous ? "on" : "off"}
+            </button>
+          )}
+          {testOnly && (
+            <>
+              <Button disabled={phase !== "idle" && phase !== "error"} onClick={() => requestStart("mic")}>
+                Test microphone
+              </Button>
+              <Button disabled={phase !== "idle" && phase !== "error"} onClick={() => requestStart("transcription")}>
+                Test transcription
+              </Button>
+              <Button
+                disabled={phase !== "idle" && phase !== "error"}
+                onClick={() => {
+                  turnStart.current = performance.now();
+                  void speak(
+                    status?.settings.language === "en"
+                      ? "Hello, COSMO."
+                      : status?.settings.language === "uk"
+                        ? "Привіт, COSMO."
+                        : "Привет, COSMO.",
+                  );
+                }}
+              >
+                Test voice
+              </Button>
+            </>
+          )}
+          {testOnly && phase === "listening" && <Button onClick={() => void finish()}>Finish recording</Button>}
+          {!testOnly && response?.text && !busy && ["idle", "error"].includes(phase) && (
+            <Button
+              title="Read the latest response aloud"
+              aria-label="Read response aloud"
+              onClick={() => {
+                turnStart.current = performance.now();
+                void speak(response.text);
+              }}
+            >
+              <Volume2 size={16} />
             </Button>
-          </>
-        )}
-        {testOnly && phase === "listening" && <Button onClick={() => void finish()}>Finish recording</Button>}
-        {!testOnly && response?.text && !busy && ["idle", "error"].includes(phase) && (
-          <Button
-            title="Read the latest response aloud"
-            aria-label="Read response aloud"
-            onClick={() => {
-              turnStart.current = performance.now();
-              void speak(response.text);
-            }}
-          >
-            <Volume2 size={16} />
-          </Button>
-        )}
-        {!["idle", "error"].includes(phase) && (
-          <Button title="Stop microphone, transcription, response and speech" onClick={() => stop()}>
-            <Square size={16} /> Stop Voice
-          </Button>
-        )}
-        {!testOnly && <Button onClick={setup}>Voice settings</Button>}
-      </div>
-      <div role="status" aria-live="polite" className="voice-state">
-        {phase === "listening" ? (
-          <>
-            <span className="voice-live-dot" />
-            Listening · microphone active <meter min="0" max="0.2" value={level} aria-label="Microphone level" />
-          </>
-        ) : phase === "transcribing" ? (
-          "Transcribing locally…"
-        ) : phase === "thinking" ? (
-          "Thinking · existing COSMO chat"
-        ) : phase === "speaking" ? (
-          "Speaking · microphone off"
-        ) : phase === "permission" ? (
-          "Waiting for microphone permission"
-        ) : phase === "review" ? (
-          "Transcript ready for review"
-        ) : (
-          <>
-            <MicOff size={14} /> Microphone off
-          </>
-        )}
-      </div>
+          )}
+          {!["idle", "error"].includes(phase) && (
+            <Button title="Stop microphone, transcription, response and speech" onClick={() => stop()}>
+              <Square size={16} /> Stop Voice
+            </Button>
+          )}
+          {!testOnly && <Button onClick={setup}>Voice settings</Button>}
+        </div>
+      )}
+      {(!compact || !["idle", "error"].includes(phase)) && (
+        <div role="status" aria-live="polite" className="voice-state">
+          {phase === "listening" ? (
+            <>
+              <span className="voice-live-dot" />
+              Listening · microphone active <meter min="0" max="0.2" value={level} aria-label="Microphone level" />
+            </>
+          ) : phase === "transcribing" ? (
+            "Transcribing locally…"
+          ) : phase === "thinking" ? (
+            "Thinking · existing COSMO chat"
+          ) : phase === "speaking" ? (
+            "Speaking · microphone off"
+          ) : phase === "permission" ? (
+            "Waiting for microphone permission"
+          ) : phase === "review" ? (
+            "Transcript ready for review"
+          ) : (
+            <>
+              <MicOff size={14} /> Microphone off
+            </>
+          )}
+        </div>
+      )}
       {error && <p role="alert">{error}</p>}
-      {transcript && (
+      {!compact && transcript && (
         <div className="voice-transcript">
           <label>
             Recognized text
@@ -423,7 +540,7 @@ export function VoiceControls({
           </Button>
         </div>
       )}
-      {!!Object.keys(metrics).length && (
+      {!compact && !!Object.keys(metrics).length && (
         <details>
           <summary>Voice latency (measured this turn)</summary>
           {Object.entries(metrics).map(([k, v]) => (
