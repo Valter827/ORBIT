@@ -266,7 +266,6 @@ export function VoiceControls({
           setError("Review the chat setup or Internet permission prompt before sending.");
         } else {
           setTranscript("");
-          if (compact && !latestDraft.current) onDraft?.(draftBeforeVoice.current);
         }
       }
     } catch (e) {
@@ -394,16 +393,26 @@ export function VoiceControls({
           )}
           {working ? (
             <button
+              key="stop"
               type="button"
               className="composer-primary"
               aria-label="Stop"
               title="Stop recording, transcription, generation and speech"
-              onClick={() => stop()}
+              onClick={(e) => {
+                e.preventDefault();
+                stop();
+              }}
             >
               <Square size={18} />
             </button>
           ) : draft.trim() ? (
-            <button type="submit" className="composer-primary" aria-label="Send message" title="Send message">
+            <button
+              key="send"
+              type="submit"
+              className="composer-primary"
+              aria-label="Send message"
+              title="Send message"
+            >
               <ArrowUp size={21} />
             </button>
           ) : null}

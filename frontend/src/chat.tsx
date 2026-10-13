@@ -122,6 +122,8 @@ export function ChatPanel({
   const [starting, setStarting] = useState(false),
     [loadingHistory, setLoadingHistory] = useState(false),
     [attachedFiles, setAttachedFiles] = useState<string[]>([]);
+  const requestRef = useRef(request);
+  requestRef.current = request;
   const voiceController = useRef<VoiceComposerController | null>(null);
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [setupNotice, setSetupNotice] = useState(false);
@@ -409,7 +411,7 @@ export function ChatPanel({
       setMessages((prev) => (regenerate ? prev.slice(0, -1) : [...prev, { role: "user", content: text }]));
       setAttachedFiles(selectedFiles);
       setLast(text);
-      setRequest("");
+      if (requestRef.current === text) setRequest("");
       setGeneration(undefined);
       setId(response.id);
       return true;

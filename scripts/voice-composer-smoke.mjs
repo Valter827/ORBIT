@@ -7,7 +7,7 @@ import assert from "node:assert/strict";
 import { voiceDefaults } from "../dist/packages/core/src/voice/service.js";
 const bundle = await build({
   stdin: {
-    contents: `import React from 'react';import {createRoot} from 'react-dom/client';import {VoiceControls} from './frontend/src/voice';function App(){const [r,setR]=React.useState();const [busy,setBusy]=React.useState(false);const [draft,setDraft]=React.useState('Keep my draft');const controller=React.useRef(null);return <form onSubmit={e=>{e.preventDefault();void controller.current.submit(draft)}}><textarea aria-label="Typed draft" value={draft} onChange={e=>setDraft(e.target.value)}/><VoiceControls compact controller={controller} draft={draft} onDraft={setDraft} visible busy={busy} response={r} send={async text=>{window.sent.push(text);setDraft('');setBusy(!!window.holdResponse);setR({id:crypto.randomUUID(),text:'A synthetic response.',running:!!window.holdResponse});return true}} stopModel={()=>{window.stops++;setBusy(false)}} setup={()=>{}} /></form>}createRoot(document.getElementById('root')).render(<App/>);`,
+    contents: `import React from 'react';import {createRoot} from 'react-dom/client';import {VoiceControls} from './frontend/src/voice';function App(){const [r,setR]=React.useState();const [busy,setBusy]=React.useState(false);const [draft,setDraft]=React.useState('Keep my draft');const controller=React.useRef(null);return <form onSubmit={e=>{e.preventDefault();void controller.current.submit(draft)}}><textarea aria-label="Typed draft" value={draft} onChange={e=>setDraft(e.target.value)}/><VoiceControls compact controller={controller} draft={draft} onDraft={setDraft} visible busy={busy} response={r} send={async text=>{window.sent.push(text);setDraft(current=>current===text?'':current);setBusy(!!window.holdResponse);setR({id:crypto.randomUUID(),text:'A synthetic response.',running:!!window.holdResponse});return true}} stopModel={()=>{window.stops++;setBusy(false)}} setup={()=>{}} /></form>}createRoot(document.getElementById('root')).render(<App/>);`,
     loader: "tsx",
     resolveDir: process.cwd(),
   },
@@ -183,6 +183,7 @@ try {
   await page.getByText("Listening · microphone active").waitFor();
   await page.getByRole("button", { name: "Stop", exact: true }).click();
   evidence.checks.push("Voice Mode visible start and stop PASS");
+  await page.getByRole("textbox",{name:"Typed draft"}).fill("Preserve unrelated typed draft");
   behavior="auto";
   await page.evaluate(()=>window.dispatchEvent(new Event("orbit-voice-settings")));
   await mic.click();
@@ -198,7 +199,8 @@ try {
   assert.equal(await page.evaluate(() => window.fixturePlayer.src), "");
   evidence.checks.push("Stop pauses active playback and clears source immediately PASS (audio double)");
   assert.deepEqual(await page.evaluate(()=>window.sent),["Edited Привіт transcript","Fixture transcript"]);
-  evidence.checks.push("Auto Send uses same callback PASS");
+  assert.equal(await page.getByRole("textbox",{name:"Typed draft"}).inputValue(),"Preserve unrelated typed draft");
+  evidence.checks.push("Auto Send uses same callback and preserves unrelated draft PASS");
   await page.evaluate(()=>{window.holdResponse=true});
   await page.getByRole("textbox",{name:"Typed draft"}).fill("Long test request");
   await page.getByRole("button",{name:"Send message",exact:true}).click();
