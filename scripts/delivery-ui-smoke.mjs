@@ -96,12 +96,16 @@ const page = await browser.newPage({ viewport: { width: 1400, height: 900 } });
 const { capture, captures } = createVisualCapture(page, process.argv.includes("--visual"));
 const errors = [];
 let setupFixture=true;
+let chatFault="";
 page.on("pageerror", (error) => errors.push(error.message));
 await page.exposeFunction("orbitTestInvoke", async (cmd, args) => {
   if (cmd.startsWith("plugin:event|")) return 1;
   if (cmd === "desktop_state") return structuredClone(desktop);
   if(cmd==="save_provider"){assert.equal(args.input.provider.endpoint,chatFixture.provider.endpoint);return null;}
   if (cmd === "core_command"){
+    if(args.method==="chat.messages" && chatFault==="load") throw Error("Conversation could not be loaded. Please retry.");
+    if(args.method==="chat.messages" && chatFault==="invalid") return {messages:[]};
+    if(args.method==="chat.messages" && chatFault==="render") return [{role:"assistant",content:"Test response",intelligence:{kind:"test",memoryUsed:{length:1}}}];
     if(setupFixture&&args.method==="ai.detect")return [{runtime:"LM Studio compatible",endpoint:chatFixture.provider.endpoint,models:await host.request("ai.models",{providerId:chatFixture.provider.id,refresh:true})}];
     return host.request(args.method, args.params);
   }
@@ -178,6 +182,30 @@ try {
   
   await page.reload();
   await page.locator(".chat-message.assistant").filter({hasText:"Fixture response."}).waitFor();
+  await draft.fill("Recovery must preserve this draft");
+  for (const fault of ["load","invalid"]) {
+    chatFault=fault;
+    await page.locator(".recent-chat").first().click();
+    await page.getByRole("alert").waitFor();
+    assert.equal(await draft.isVisible(),true);
+    assert.equal(await draft.inputValue(),"Recovery must preserve this draft");
+    chatFault="";
+    await page.getByRole("button",{name:"Retry",exact:true}).click();
+    await page.locator(".chat-message.assistant").filter({hasText:"Fixture response."}).waitFor();
+  }
+  chatFault="render";
+  await page.locator(".recent-chat").first().click();
+  await page.getByText("Chat could not be displayed.",{exact:true}).waitFor();
+  assert.equal(await page.getByRole("navigation",{name:"Main navigation"}).isVisible(),true);
+  chatFault="";
+  await page.getByRole("button",{name:"Retry Chat",exact:true}).click();
+  await page.locator(".chat-message.assistant").filter({hasText:"Fixture response."}).waitFor();
+  assert.equal(await draft.inputValue(),"Recovery must preserve this draft");
+  await page.getByRole("button",{name:"New chat",exact:true}).click();
+  await page.getByText("Make room for your next idea.",{exact:true}).waitFor();
+  assert.equal(await page.locator(".composer-voice-actions").isVisible(),true);
+  await page.locator(".recent-chat").first().click();
+  await page.locator(".chat-message.assistant").filter({hasText:"Fixture response."}).waitFor();
   for (const width of [480,800,1100,1440,1920]) {
     await page.setViewportSize({width,height:900}); await page.waitForTimeout(300);
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
@@ -194,7 +222,7 @@ try {
   assert.deepEqual(errors,[]);
   await fs.writeFile("validation/delivery-ui-smoke.json",JSON.stringify({
     status:"PASS",version:desktop.version,browser:browser.version(),fixture:true,nativeAcceptance:"NOT VERIFIED",
-    checks:["chat-first","composer-autofocus","keyboard-send","fixture-chat-markdown","reload-history","responsive-layout","about-version","editable-no-brain","draft-setup-cloud-studio","dismiss-banner","setup-modal","configure-then-send","mode-selector","Shift+Enter"],
+    checks:["history-load-retry","invalid-history-visible-error","render-boundary-recovery","recovery-draft-preserved","new-chat-empty-state","voice-controls-visible","chat-first","composer-autofocus","keyboard-send","fixture-chat-markdown","reload-history","responsive-layout","about-version","editable-no-brain","draft-setup-cloud-studio","dismiss-banner","setup-modal","configure-then-send","mode-selector","Shift+Enter"],
     captures
   },null,2));
   console.log("PASS: current chat-first frontend integration with fixture provider. Not real AI or native acceptance.");

@@ -11,6 +11,15 @@ import { MessageBody } from "./message-body";
 import { intelligenceDefaults, type Intelligence } from "./ai-types";
 import type { AIState } from "./ai-types";
 type Message = { role: string; content?: string; intelligence?: Generation["intelligence"] };
+function checkedMessages(value: Message[]): Message[] {
+  if (
+    !Array.isArray(value) ||
+    value.some((m) => !m || typeof m.role !== "string" || (m.content !== undefined && typeof m.content !== "string"))
+  ) {
+    throw new Error("Conversation could not be loaded: invalid message data. Retry or select another chat.");
+  }
+  return value;
+}
 type Generation = {
   id: string;
   conversationId: string;
@@ -142,6 +151,7 @@ export function ChatPanel({
     if (contextToken) setContextOpen((v) => !v);
   }, [contextToken]);
   const [restored, setRestored] = useState(false);
+  const [failedChat, setFailedChat] = useState<string>();
   const historyEpoch = useRef(0);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const [brain, setBrain] = useState("Checking brain…");
@@ -232,14 +242,16 @@ export function ChatPanel({
     if (active.current) return;
     const ticket = ++historyEpoch.current;
     setLoadingHistory(true);
+    setFailedChat(selected);
     try {
-      const m = await core<Message[]>("chat.messages", { id: selected, profileId: ai.selected });
+      const m = checkedMessages(await core<Message[]>("chat.messages", { id: selected, profileId: ai.selected }));
       if (ticket !== historyEpoch.current) return;
       setConversation(selected);
       remember(selected);
       setMessages(m);
       setGeneration(undefined);
       setError("");
+      setFailedChat(undefined);
       setAttachedFiles([]);
       setLast([...m].reverse().find((v) => v.role === "user")?.content ?? "");
     } catch (e) {
@@ -247,6 +259,7 @@ export function ChatPanel({
     } finally {
       if (ticket === historyEpoch.current) {
         setLoadingHistory(false);
+        setRestored(true);
         focusComposer();
       }
     }
@@ -276,6 +289,7 @@ export function ChatPanel({
     setGeneration(undefined);
     setLast("");
     setError("");
+    setFailedChat(undefined);
     setRequest("");
     setAttachedFiles([]);
     remember("");
@@ -296,13 +310,15 @@ export function ChatPanel({
       .then(async (items) => {
         if (ticket !== historyEpoch.current) return;
         const stored = readPreference(storageKey, "__unset__");
-        const saved = stored === "__unset__" ? items[0]?.id : stored;
+        const saved = openChat?.id ?? (newChatToken > 0 ? "" : stored === "__unset__" ? items[0]?.id : stored);
         if (saved && items.some((c) => c.id === saved) && readPreference("restore", "true") !== "false") {
-          const m = await core<Message[]>("chat.messages", { id: saved, profileId: ai.selected });
+          setFailedChat(saved);
+          const m = checkedMessages(await core<Message[]>("chat.messages", { id: saved, profileId: ai.selected }));
           if (ticket !== historyEpoch.current) return;
           setConversation(saved);
           onActive(saved);
           setMessages(m);
+          setFailedChat(undefined);
           setLast([...m].reverse().find((v) => v.role === "user")?.content ?? "");
         }
       })
@@ -617,7 +633,11 @@ export function ChatPanel({
         <div ref={end} />
       </div>
       {(error || generation?.error) && (
-        <ErrorNotice details={error || generation?.error || ""} onSettings={onSettings} />
+        <ErrorNotice
+          details={error || generation?.error || ""}
+          onSettings={onSettings}
+          retry={failedChat ? () => void openConversation(failedChat) : undefined}
+        />
       )}
       {contextOpen && (
         <aside className="context-panel">

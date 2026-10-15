@@ -1654,3 +1654,7 @@ small {
 .unified-composer .intelligence-modes select { margin-top: 0; }
 .unified-composer > label { margin: 0; }
 .composer-voice { padding: 0; margin: 0; border: 0; }
+
+/* Keep the Chat recovery surface in the same bounded layout as its panel. */
+.chat-first .home-page > .chat-view:not([hidden]) { flex: 1; min-height: 0; }
+.chat-render-error { margin: 24px; }

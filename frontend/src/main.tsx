@@ -7,6 +7,7 @@ import { SensePanel } from "./sense";
 import { KnowledgePanel, KnowledgeSettings } from "./knowledge";
 import { AIStudio, MemoryPanel } from "./studio";
 import { ChatPanel } from "./chat";
+import { ChatBoundary } from "./chat-boundary";
 import type { AIState } from "./ai-types";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { createRoot } from "react-dom/client";
@@ -254,6 +255,7 @@ function App() {
           onClick={() => {
             setPage("Home");
             setMode("Chat");
+            setOpenChat(undefined);
             setNewChatToken((v) => v + 1);
           }}
         >
@@ -280,6 +282,7 @@ function App() {
               aria-current={page === name ? "page" : undefined}
               onClick={() => {
                 setPage(name);
+                if (name === "Home") setMode("Chat");
                 setSelected(null);
               }}
             >
@@ -459,45 +462,50 @@ function App() {
                 </section>
               )}
               {ai && (
-                <div hidden={mode !== "Chat"}>
-                  <ChatPanel
-                    pageContext={pageContext}
-                    onPageContext={setPageContext}
-                    onClearPage={() => setPageContext(undefined)}
-                    key={status?.workspace ?? ""}
-                    ai={ai}
-                    request={request}
-                    setRequest={setRequest}
-                    workspace={status?.workspace ?? null}
-                    newChatToken={newChatToken}
-                    visible={
-                      page === "Home" &&
-                      mode === "Chat" &&
-                      !localSetup &&
-                      !palette &&
-                      !exit &&
-                      !tray &&
-                      !status?.pending.length
-                    }
-                    openChat={openChat}
-                    onHistory={setRecent}
-                    onActive={setActiveChat}
-                    onBusy={setChatBusy}
-                    onStatus={setBrainStatus}
-                    contextToken={contextToken}
-                    onLocalSetup={() => setLocalSetup(true)}
-                    onSense={() => setMode("Sense")}
-                    onProject={() => setPage("Projects")}
-                    onVoiceSettings={() => {
-                      setSettingsSection("Voice");
-                      setPage("Settings");
-                    }}
-                    onSettings={() => {
-                      setSettingsSection("AI & Models");
-                      setPage("Settings");
-                    }}
-                    onManage={() => setPage("Knowledge")}
-                  />
+                <div className="chat-view" hidden={mode !== "Chat"}>
+                  <ChatBoundary
+                    resetKey={`${ai.selected}:${status?.workspace ?? ""}:${openChat?.token ?? 0}:${newChatToken}`}
+                    onFailure={() => setChatBusy(false)}
+                  >
+                    <ChatPanel
+                      pageContext={pageContext}
+                      onPageContext={setPageContext}
+                      onClearPage={() => setPageContext(undefined)}
+                      key={status?.workspace ?? ""}
+                      ai={ai}
+                      request={request}
+                      setRequest={setRequest}
+                      workspace={status?.workspace ?? null}
+                      newChatToken={newChatToken}
+                      visible={
+                        page === "Home" &&
+                        mode === "Chat" &&
+                        !localSetup &&
+                        !palette &&
+                        !exit &&
+                        !tray &&
+                        !status?.pending.length
+                      }
+                      openChat={openChat}
+                      onHistory={setRecent}
+                      onActive={setActiveChat}
+                      onBusy={setChatBusy}
+                      onStatus={setBrainStatus}
+                      contextToken={contextToken}
+                      onLocalSetup={() => setLocalSetup(true)}
+                      onSense={() => setMode("Sense")}
+                      onProject={() => setPage("Projects")}
+                      onVoiceSettings={() => {
+                        setSettingsSection("Voice");
+                        setPage("Settings");
+                      }}
+                      onSettings={() => {
+                        setSettingsSection("AI & Models");
+                        setPage("Settings");
+                      }}
+                      onManage={() => setPage("Knowledge")}
+                    />
+                  </ChatBoundary>
                 </div>
               )}
               {mode === "Sense" && ai && <SensePanel ai={ai} refresh={refresh} initialQuestion={request} />}
